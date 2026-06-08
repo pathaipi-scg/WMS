@@ -1,0 +1,92 @@
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
+import { ChartCard } from './ChartCard';
+import { useQueueDistributionData } from '../hooks/useQueueDistributionData';
+
+const COLORS = {
+  'SmartQ':   '#ef4444',
+  'Walk in':  '#3b82f6',
+  'ล่วงหน้า': '#10b981',
+  'อื่นๆ':    '#d1d5db',
+};
+
+const COLOR_LIST = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#d1d5db'];
+
+function CustomTooltip({ active, payload }) {
+  if (!active || !payload?.length) return null;
+  const d = payload[0].payload;
+  return (
+    <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-md text-sm">
+      <p className="font-medium text-gray-700">{d.queue_type}</p>
+      <p className="mt-0.5 font-semibold" style={{ color: payload[0].fill }}>
+        {d.count} คัน ({d.pct}%)
+      </p>
+    </div>
+  );
+}
+
+function Legend({ items }) {
+  return (
+    <div className="mt-4 flex flex-col gap-2">
+      {items.map((item, i) => (
+        <div key={item.queue_type} className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <span
+              className="h-2.5 w-2.5 shrink-0 rounded-full"
+              style={{ backgroundColor: COLORS[item.queue_type] ?? COLOR_LIST[i] }}
+            />
+            <span className="text-xs text-gray-600 truncate">{item.queue_type}</span>
+          </div>
+          <span className="text-xs font-semibold text-gray-700 shrink-0">
+            {item.count} <span className="font-normal text-gray-400">({item.pct}%)</span>
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+const CHART_HEIGHT = 260;
+
+export function QueueDistributionChart({ preset, dateFrom, dateTo }) {
+  const { data, loading, error } = useQueueDistributionData(preset, dateFrom, dateTo);
+  const items = data?.data ?? [];
+
+  return (
+    <ChartCard
+      title="สัดส่วนประเภทคิว"
+      subtitle={loading ? undefined : `รวม ${data?.total ?? 0} คัน`}
+      loading={loading}
+      error={error}
+      height={CHART_HEIGHT}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', height: CHART_HEIGHT }}>
+        <ResponsiveContainer width="55%" height={CHART_HEIGHT - 20}>
+          <PieChart>
+            <Pie
+              data={items}
+              dataKey="count"
+              nameKey="queue_type"
+              cx="50%"
+              cy="50%"
+              innerRadius={55}
+              outerRadius={85}
+              paddingAngle={2}
+              strokeWidth={0}
+            >
+              {items.map((entry, index) => (
+                <Cell
+                  key={entry.queue_type}
+                  fill={COLORS[entry.queue_type] ?? COLOR_LIST[index]}
+                />
+              ))}
+            </Pie>
+            <Tooltip content={<CustomTooltip />} />
+          </PieChart>
+        </ResponsiveContainer>
+        <div style={{ flex: 1 }}>
+          <Legend items={items} />
+        </div>
+      </div>
+    </ChartCard>
+  );
+}

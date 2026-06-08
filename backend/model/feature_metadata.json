@@ -1,0 +1,88 @@
+{
+  "feature_cols": [
+    "PickListType",
+    "TruckSeqNo",
+    "CarType",
+    "PrepareForward",
+    "PostLocationName",
+    "hour",
+    "day_of_week",
+    "week_of_month",
+    "month",
+    "total_tile_amount",
+    "total_fitting_amount",
+    "total_accessories_amount",
+    "total_sap_amount",
+    "product_group_count",
+    "queue_waiting",
+    "queue_loading",
+    "queue_closing",
+    "total_queue",
+    "available_bays",
+    "sap_per_group",
+    "queue_x_bays",
+    "queue_x_sap",
+    "rolling_avg_time_last5",
+    "inter_arrival_min",
+    "car_type_x_sap",
+    "avg_time_by_cartype",
+    "rolling_avg_cartype_last10"
+  ],
+  "train_medians": {
+    "PickListType": 0.0,
+    "TruckSeqNo": 42.0,
+    "CarType": 1.0,
+    "PrepareForward": 0.0,
+    "PostLocationName": 8.0,
+    "hour": 12.0,
+    "day_of_week": 2.0,
+    "week_of_month": 3.0,
+    "month": 6.0,
+    "total_tile_amount": 1440.0,
+    "total_fitting_amount": 70.0,
+    "total_accessories_amount": 0.0,
+    "total_sap_amount": 1600.0,
+    "product_group_count": 2.0,
+    "queue_waiting": 1.0,
+    "queue_loading": 2.0,
+    "queue_closing": 1.0,
+    "total_queue": 5.0,
+    "available_bays": 8.0,
+    "sap_per_group": 914.25,
+    "queue_x_bays": 0.1111,
+    "queue_x_sap": 550.0,
+    "rolling_avg_time_last5": 57.61,
+    "inter_arrival_min": 6.03,
+    "car_type_x_sap": 1633.0,
+    "avg_time_by_cartype": 52.28,
+    "rolling_avg_cartype_last10": 56.84
+  },
+  "cartype_avg_map": {
+    "0.0": 36.29,
+    "1.0": 47.01,
+    "2.0": 54.88,
+    "3.0": 68.66
+  },
+  "rolling_median_by_cartype": {
+    "0.0": 38.59,
+    "1.0": 50.06,
+    "2.0": 58.27,
+    "3.0": 72.6
+  },
+  "global_rolling_mean": 57.61,
+  "model_type": "XGBoost",
+  "metrics": {
+    "train": {
+      "split": "train",
+      "mae": 9.4235,
+      "rmse": 11.9577,
+      "r2": 0.6916
+    },
+    "test": {
+      "split": "test",
+      "mae": 11.4321,
+      "rmse": 14.4857,
+      "r2": 0.5537
+    }
+  }
+}
