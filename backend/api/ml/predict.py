@@ -34,6 +34,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import re
 from pathlib import Path
 from typing import Union
 
@@ -45,7 +46,7 @@ from .engineer import FEATURE_COLS, engineer_inference_features
 
 MODELS_DIR = Path(__file__).resolve().parents[2] / "model"
 
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class Predictor:
@@ -56,7 +57,7 @@ class Predictor:
 
     def __init__(
         self,
-        model_path: Union[str, Path] = MODELS_DIR / "best_model_totaltime.joblib",
+        model_path: Union[str, Path] = MODELS_DIR / "Model_V.2.joblib",
         metadata_path: Union[str, Path] = MODELS_DIR / "feature_metadata.json",
     ) -> None:
         model_path    = Path(model_path)
@@ -74,7 +75,28 @@ class Predictor:
             )
 
         self.model = joblib.load(model_path)
+        print("=" * 50)
+        print("MODEL TYPE:", type(self.model))
+        print("MODEL MODULE:", type(self.model).__module__)
+        print("=" * 50)
         meta = json.loads(metadata_path.read_text(encoding="utf-8"))
+
+        # Identify the model from the loaded object (not metadata, which is shared
+        # across versions and can be stale, e.g. "XGBoost" even for a LightGBM file).
+        module = type(self.model).__module__.split(".")[0]
+        self.framework: str = {
+            "xgboost": "XGBoost",
+            "lightgbm": "LightGBM",
+        }.get(module, module)
+        # Numeric version parsed from the file name (e.g. "Model_V.2" -> 2.0),
+        # stored in PredictionLog.Version (float). None if no number is present.
+        stem = Path(model_path).stem
+        m = re.search(r"[vV]\.?(\d+(?:\.\d+)?)", stem)
+        self.version: float | None = float(m.group(1)) if m else None
+        # Framework name stored in PredictionLog.Model (varchar(50)).
+        self.model_name: str = self.framework[:50]
+        # Human-readable label for logging only.
+        self.model_label: str = self.framework + (f" v{self.version}" if self.version is not None else "")
 
         self.feature_cols: list[str] = meta["feature_cols"]
         self.train_medians: dict     = {k: float(v) for k, v in meta["train_medians"].items()}
@@ -84,9 +106,9 @@ class Predictor:
         }
         self.rolling_fallback_mean: float = float(meta["global_rolling_mean"])
 
-        log.info(
+        logger.info(
             "Predictor ready | model=%s | features=%d",
-            meta.get("model_type", "unknown"),
+            self.model_label,
             len(self.feature_cols),
         )
 
@@ -155,7 +177,7 @@ class Predictor:
             DataFrame with original columns + 'predicted_total_time_min'.
         """
         df_raw = pd.read_csv(input_path, encoding="utf-8-sig")
-        log.info("Loaded %d records from %s", len(df_raw), input_path)
+        logger.info("Loaded %d records from %s", len(df_raw), input_path)
 
         X = self._build_features(df_raw)
         preds = self.model.predict(X)
@@ -166,7 +188,7 @@ class Predictor:
         if output_path is not None:
             Path(output_path).parent.mkdir(parents=True, exist_ok=True)
             result.to_csv(output_path, index=False, encoding="utf-8-sig")
-            log.info("Predictions saved -> %s", output_path)
+            logger.info("Predictions saved -> %s", output_path)
 
         return result
 

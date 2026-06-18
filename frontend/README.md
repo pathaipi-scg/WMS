@@ -1,310 +1,222 @@
 # WMS Frontend
 
-> React 19 · Vite 6 · Tailwind CSS 4  
-> Dashboard real-time สำหรับระบบบริหารจัดการคลังสินค้า SB1
+> React 19 · Vite 6 · Tailwind CSS 4
+> Dashboard real-time + Analytics + Prediction report สำหรับระบบบริหารจัดการคลังสินค้า SB1
 
-ดู README หลักของทั้งระบบได้ที่ [../README.md](../README.md)
+ดู README หลักของทั้งระบบ (Quick Start, Tech Stack, Business Workflow, Deploy) ที่ [../README.md](../README.md)
 
 ---
 
 ## สารบัญ
 
-- [Tech Stack](#tech-stack)
 - [โครงสร้างโปรเจกต์](#โครงสร้างโปรเจกต์)
-- [การติดตั้ง](#การติดตั้ง)
+- [การติดตั้งและการรัน](#การติดตั้งและการรัน)
 - [Environment Variables](#environment-variables)
-- [การรัน](#การรัน)
 - [หน้าหลัก (Pages)](#หน้าหลัก-pages)
-- [Component Structure](#component-structure)
-- [Custom Hooks](#custom-hooks)
+- [Components & Hooks](#components--hooks)
 - [การเชื่อมต่อ API และ WebSocket](#การเชื่อมต่อ-api-และ-websocket)
-
----
-
-## Tech Stack
-
-| เทคโนโลยี | เวอร์ชัน | วัตถุประสงค์ |
-| ---------- | -------- | ------------ |
-| React | 19.0 | UI framework |
-| Vite | 6.2 | Build tool & Dev server |
-| Tailwind CSS | 4.1 | Utility-first styling |
-| Axios | 1.13 | HTTP client (REST API) |
-| react-use-websocket | 4.13 | WebSocket hook |
-| Lucide React | 1.8 | Icon library |
-| Material-UI Icons | 7.3 | Supplemental icons |
-| Emotion | latest | CSS-in-JS |
+- [การไหลของข้อมูล Real-time](#การไหลของข้อมูล-real-time)
 
 ---
 
 ## โครงสร้างโปรเจกต์
 
-โครงสร้างใช้รูปแบบ **Feature-first / Vertical Slice** — แต่ละ feature มี components, hooks, utils, constants อยู่ครบในที่เดียว ทำให้หาและแก้ไขโค้ดได้ง่ายโดยไม่ต้องกระโดดหลายโฟลเดอร์
+ใช้รูปแบบ **Feature-first / Vertical Slice** — แต่ละ feature มี components, hooks, utils, constants อยู่ครบในที่เดียว ทำให้หาและแก้ไขโค้ดได้ง่ายโดยไม่ต้องกระโดดหลายโฟลเดอร์
 
 ```text
 frontend/
-├── package.json
-├── vite.config.js
-├── index.html                  ← entry → /src/app/index.jsx
-├── .env                        ← Environment variables (ไม่ commit)
+├── package.json                ← dependency + คำสั่ง npm
+├── vite.config.js              ← ตั้งค่า Vite
+├── index.html                  ← entry point ของหน้าเว็บ
+├── .env.example                ← ตัวอย่างไฟล์ตั้งค่า
 │
-└── src/
-    ├── app/                    ← Entry point
-    │   ├── index.jsx           ← Bootstrap React app
-    │   ├── App.jsx             ← Root component + navigation state
-    │   └── router.jsx          ← Route definitions
+└── src/                        ← โค้ดหน้าเว็บ
+    ├── app/                    ← จุดเริ่มแอป + เส้นทางหน้า
+    ├── features/               ← โค้ดแยกตามฟีเจอร์
+    │   ├── dashboard/          ← หน้าภาพรวม real-time
+    │   ├── queue/              ← ตารางคิวรถ
+    │   ├── yard/               ← แผนผัง Yard
+    │   ├── analytics/          ← กราฟวิเคราะห์ข้อมูล
+    │   ├── prediction/         ← รายงานผลโมเดล
+    │   └── notifications/      ← แจ้งเตือน (เสียง + toast)
     │
-    ├── features/               ← หัวใจหลัก: แต่ละ feature อยู่ครบในที่เดียว
-    │   ├── dashboard/
-    │   │   ├── components/
-    │   │   │   ├── DashboardLoadingState.jsx
-    │   │   │   ├── LastUpdatedStatus.jsx
-    │   │   │   └── SummaryCard.jsx
-    │   │   ├── hooks/
-    │   │   │   ├── useDashboardData.js       ← ดึงข้อมูลผ่าน REST API
-    │   │   │   └── useDashboardRealtime.js   ← รับ WebSocket push
-    │   │   ├── utils/
-    │   │   │   ├── createDashboardState.js
-    │   │   │   └── waitingTimeStyles.js
-    │   │   ├── constants/index.js
-    │   │   └── index.js                      ← barrel export (public API)
-    │   │
-    │   ├── queue/
-    │   │   ├── components/
-    │   │   │   ├── QueueTable.jsx
-    │   │   │   └── modal/QueueDetailsModal.jsx
-    │   │   ├── hooks/
-    │   │   │   └── useTruckQueues.js          ← filter + sort + search
-    │   │   ├── utils/
-    │   │   │   ├── queueTransforms.js
-    │   │   │   ├── queueDetailsModel.js
-    │   │   │   └── timelineStyles.js
-    │   │   ├── constants/index.js
-    │   │   └── index.js
-    │   │
-    │   ├── yard/
-    │   │   ├── components/
-    │   │   │   ├── YardPanel.jsx
-    │   │   │   ├── ZoneSection.jsx
-    │   │   │   ├── SlotCard.jsx
-    │   │   │   ├── SlotResourceIcons.jsx
-    │   │   │   └── modal/
-    │   │   │       ├── YardDetailsModal.jsx
-    │   │   │       └── EmptySlotModal.jsx
-    │   │   ├── hooks/
-    │   │   │   ├── useYardPanel.js
-    │   │   │   └── useSlotCard.js
-    │   │   ├── utils/
-    │   │   │   ├── yardTransforms.js
-    │   │   │   ├── yardNormalize.js
-    │   │   │   ├── yardMatching.js
-    │   │   │   ├── yardDetailsModel.js
-    │   │   │   └── slotCardModel.js
-    │   │   ├── constants/index.js
-    │   │   └── index.js
-    │   │
-    │   ├── prediction/
-    │   │   ├── components/
-    │   │   │   ├── MetricCard.jsx            ← การ์ด MAE / RMSE / Accuracy / Total
-    │   │   │   ├── ErrorBadge.jsx            ← badge ความคลาดเคลื่อน (สี + นาที)
-    │   │   │   ├── PredictionToolbar.jsx     ← search + filter + Export CSV
-    │   │   │   ├── PredictionTable.jsx       ← ตาราง + loading/empty state
-    │   │   │   └── PredictionPagination.jsx
-    │   │   ├── hooks/
-    │   │   │   └── usePredictionData.js      ← fetch + filter + pagination
-    │   │   ├── utils/
-    │   │   │   └── exportCsv.js
-    │   │   ├── constants/index.js
-    │   │   └── index.js
-    │   │
-    │   └── notifications/                    ← ระบบแจ้งเตือน (sound, toast, rules)
-    │       ├── components/
-    │       ├── hooks/
-    │       ├── utils/
-    │       └── constants/
-    │
-    ├── shared/                 ← ของที่ใช้ร่วมกันหลาย feature
-    │   ├── components/
-    │   │   ├── StatusBadge.jsx
-    │   │   ├── QueueStatusBadge.jsx
-    │   │   ├── WaitingTimeBar.jsx
-    │   │   ├── YardSlotStatusBadge.jsx
-    │   │   ├── BottomSheet.jsx
-    │   │   ├── InfoSection.jsx               ← ใช้ใน QueueDetailsModal + YardDetailsModal
-    │   │   └── ModalIconHeader.jsx           ← ใช้ใน QueueDetailsModal + YardDetailsModal
-    │   ├── hooks/
-    │   │   ├── useLiveClock.js
-    │   │   └── useModal.js
-    │   ├── utils/
-    │   │   ├── dateTime.js
-    │   │   └── text.js
-    │   └── constants/
-    │       ├── app.js
-    │       └── dateTime.js
-    │
-    ├── services/               ← API clients
-    │   ├── apiClient.js        ← Axios instance
-    │   ├── dashboardService.js
-    │   └── predictionService.js
-    │
-    ├── config/                 ← Environment config (อ่านจาก .env)
-    ├── layouts/                ← Layout wrappers
-    │   ├── DashboardLayout.jsx
-    │   └── Header.jsx
-    ├── pages/                  ← Page components (thin composition — ไม่มี logic)
-    │   ├── DashboardPage.jsx
-    │   └── PredictionPage.jsx
-    └── styles/                 ← Global CSS
+    ├── shared/                 ← ของใช้ร่วมกัน (components · hooks · utils · constants)
+    ├── services/               ← ตัวเรียก API/WebSocket
+    ├── config/                 ← อ่านค่าจาก .env
+    ├── layouts/                ← โครงหน้าร่วม
+    ├── pages/                  ← หน้าเพจ
+    └── styles/                 ← ไฟล์ CSS
 ```
 
 ### กฎของโครงสร้าง
 
 | กฎ | รายละเอียด |
 | -- | --------- |
-| **Feature code อยู่ใน `features/`** | ถ้า code ใช้เฉพาะ feature นั้น → วางใน `features/{feature}/` |
-| **Shared code อยู่ใน `shared/`** | ถ้า code ใช้ 2+ feature → วางใน `shared/` |
-| **นำเข้าผ่าน barrel** | import จาก feature ผ่าน `index.js` เช่น `import { useDashboardData } from '@/features/dashboard'` |
+| **Feature code อยู่ใน `features/`** | code ที่ใช้เฉพาะ feature → วางใน `features/{feature}/` |
+| **Shared code อยู่ใน `shared/`** | code ที่ใช้ 2+ feature → วางใน `shared/` |
+| **นำเข้าผ่าน barrel** | import ผ่าน `index.js` เช่น `import { useDashboardData } from '@/features/dashboard'` |
 | **Pages บาง** | `pages/` แค่ compose components — ไม่มี logic ของตัวเอง |
+| **Path alias** | `@` → `./src` (ตั้งใน vite.config.js) |
 
 ---
 
-## การติดตั้ง
+## การติดตั้งและการรัน
 
 ```bash
-# 1. เข้า directory
 cd frontend
-
-# 2. ติดตั้ง dependencies
 npm install
-
-# 3. สร้างไฟล์ .env (ดูหัวข้อ Environment Variables)
+copy .env.example .env     # ค่า default ชี้ไป http://127.0.0.1:3004
 ```
+
+| คำสั่ง | คำอธิบาย |
+| ------- | --------- |
+| `npm run dev` | dev server ที่ `http://localhost:3000` พร้อม HMR |
+| `npm run build` | build production → `dist/` |
+| `npm run preview` | preview production build ก่อน deploy |
+| `npm run test` | รัน unit tests |
+| `npm run test:watch` | tests แบบ watch mode |
+
+> ต้องรัน Backend (Daphne, port 3004) คู่กันด้วยเพื่อให้ Dashboard real-time ทำงาน — ดู [../README.md](../README.md)
 
 ---
 
 ## Environment Variables
 
-สร้างไฟล์ `.env` ใน `frontend/`:
+สร้าง `.env` จาก `.env.example`:
 
 ```env
-VITE_API_ORIGIN=http://127.0.0.1:8000
-VITE_WS_ORIGIN=ws://127.0.0.1:8000
+VITE_API_ORIGIN=http://127.0.0.1:3004
+VITE_WS_ORIGIN=ws://127.0.0.1:3004
 ```
 
 | Variable | ตัวอย่าง | คำอธิบาย |
 | -------- | -------- | --------- |
-| `VITE_API_ORIGIN` | `http://127.0.0.1:8000` | Base URL ของ Backend REST API |
-| `VITE_WS_ORIGIN` | `ws://127.0.0.1:8000` | Base URL ของ WebSocket server |
+| `VITE_API_ORIGIN` | `http://127.0.0.1:3004` | Base URL ของ Backend REST API |
+| `VITE_WS_ORIGIN` | `ws://127.0.0.1:3004` | Base URL ของ WebSocket server |
 
-> หาก Backend รันบน IP หรือ port อื่น ให้แก้ไขที่นี่
-
----
-
-## การรัน
-
-| คำสั่ง | คำอธิบาย |
-| ------- | --------- |
-| `npm run dev` | รัน dev server ที่ `http://localhost:3000` พร้อม HMR |
-| `npm run build` | Build production → output ที่ `dist/` |
-| `npm run preview` | Preview production build ก่อน deploy |
-| `npm run test` | รัน unit tests |
-| `npm run test:watch` | รัน tests แบบ watch mode |
-
-**Dev server:**
-
-```bash
-npm run dev
-```
-
-เมื่อรันสำเร็จ:
-
-```text
-  VITE v6.x.x  ready in xxx ms
-
-  ➜  Local:   http://localhost:3000/
-  ➜  Network: http://0.0.0.0:3000/
-```
-
-**Production build:**
-
-```bash
-npm run build
-# ไฟล์ output อยู่ใน dist/
-```
+> ค่า default ในโค้ด ([config/env.js](src/config/env.js)) คือ `http://127.0.0.1:3004` — หาก Backend รันบน IP / port อื่น ให้แก้ที่นี่
 
 ---
 
 ## หน้าหลัก (Pages)
 
-### Dashboard Page
+มี 3 หน้า ตรงกับ 3 route ใน [app/router.jsx](src/app/router.jsx): `/` · `/predictions` · `/analytics`
 
-แสดงข้อมูล warehouse แบบ real-time โดยรับข้อมูลผ่าน WebSocket
+### Dashboard Page (`/`)
+แสดงข้อมูล warehouse แบบ real-time ผ่าน WebSocket
 
 | ส่วน | คำอธิบาย |
 | ---- | --------- |
 | Summary Bar | จำนวนรถ: รอคิว · กำลังโหลด · เสร็จสิ้น · เกินเวลา · ช่องว่าง |
-| Truck Queue | ตารางรถทุกคันพร้อมสถานะ ประเภทคิว สินค้า และ timestamps |
-| Yard Panel | แผนผัง Yard แสดงสถานะทุกช่องโหลดและ forklift |
-| Notifications | แจ้งเตือนรถที่รอนานเกินกำหนด พร้อมเสียงและ toast |
+| Truck Queue | ตารางรถทุกคันพร้อมสถานะ ประเภทคิว สินค้า timestamps (คลิกเปิด QueueDetailsModal) |
+| Yard Panel | แผนผัง Yard ทุกช่องโหลดและ forklift |
+| Notifications | แจ้งเตือนรถที่รอนานเกินกำหนด (rule ประเมินจาก backend) พร้อมเสียง + toast |
 
-### Prediction Page
-
-แสดงรายงานความแม่นยำของ ML model
+### Prediction Page (`/predictions`)
+รายงานความแม่นยำของ ML model
 
 | ส่วน | คำอธิบาย |
 | ---- | --------- |
-| Metrics Summary | MAE · RMSE · Accuracy ±15 นาที |
-| Comparison Table | เวลาพยากรณ์ vs เวลาจริงรายคัน พร้อม error |
-| Filter & Pagination | กรองตามวันที่ ประเภทรถ |
-| Export CSV | Download รายงานเป็นไฟล์ CSV |
+| Metric Cards | MAE · RMSE · Accuracy ±15 นาที · จำนวนรถที่เสร็จ |
+| Metric Charts | แนวโน้ม MAE/RMSE และ R² ตามเวลา (PredictionMetricCharts) |
+| Comparison Table | เวลาพยากรณ์ vs เวลาจริงรายคัน พร้อม error และสถานะ |
+| Toolbar & Pagination | ค้นหา / กรองตามประเภท / เลือก 10·25·50 แถวต่อหน้า |
+
+### Analytics Page (`/analytics`)
+รายงานสถิติย้อนหลัง เลือกช่วงเวลาได้ (`today` / `7d` / `30d` / `3m` / `6m` / `1y` หรือกำหนดวันที่เอง)
+
+| ส่วน | คำอธิบาย |
+| ---- | --------- |
+| KPI Cards | ตัวเลขสรุปภาพรวม |
+| Throughput Chart | ปริมาณงานต่อช่วงเวลา (จัดกลุ่มราย ชม./วัน) |
+| Queue Distribution Chart | สัดส่วนตามประเภทคิว |
+| Product Volume Chart | ปริมาณสินค้าแยกประเภท |
+| Avg Time by Queue Chart | เวลาเฉลี่ยตามประเภทรถ/คิว |
+| Notification Summary Chart | สรุปจำนวนการแจ้งเตือนแยกประเภท |
 
 ---
 
-## Component Structure
+## Components & Hooks
 
-| ที่อยู่ | Components |
-| ------- | ---------- |
-| `shared/components/` | StatusBadge · QueueStatusBadge · WaitingTimeBar · YardSlotStatusBadge · BottomSheet · InfoSection · ModalIconHeader |
-| `features/dashboard/components/` | SummaryCard · LastUpdatedStatus · DashboardLoadingState |
-| `features/queue/components/` | QueueTable · QueueDetailsModal |
-| `features/yard/components/` | YardPanel · ZoneSection · SlotCard · SlotResourceIcons · YardDetailsModal · EmptySlotModal |
-| `features/prediction/components/` | MetricCard · ErrorBadge · PredictionToolbar · PredictionTable · PredictionPagination |
-| `features/notifications/components/` | NotificationMenu · NotificationToast |
+### Analytics (`features/analytics/`)
 
----
+| Components | Hooks |
+| --------- | ----- |
+| `KpiCard` · `ChartCard` · `ChartToggle` · `AnalyticsDateRangePicker` | `useKpiData` |
+| `ThroughputChart` · `QueueDistributionChart` | `useThroughputData` · `useQueueDistributionData` |
+| `ProductVolumeChart` · `AvgTimeByQueueChart` | `useProductVolumeData` · `useAvgTimeByTruckTypeData` |
+| `NotificationSummaryChart` | `useNotificationSummaryData` |
 
-## Custom Hooks
+### Prediction (`features/prediction/`)
+
+| Components | Hooks |
+| --------- | ----- |
+| `MetricCard` · `PredictionTable` · `PredictionMetricCharts` | `usePredictionData` |
+| `PredictionToolbar` · `PredictionPagination` | |
+
+### Shared & Feature Hooks
 
 | Hook | ที่อยู่ | คำอธิบาย |
 | ---- | ------- | --------- |
-| `useDashboardData` | `features/dashboard/` | ดึงข้อมูล dashboard ผ่าน REST API (`/api/dashboard/snapshot/`) |
-| `useDashboardRealtime` | `features/dashboard/` | จัดการ WebSocket connection และรับ push data ทุก 10 วินาที |
-| `useTruckQueues` | `features/queue/` | Filter, sort, search สำหรับ truck queue |
-| `useYardPanel` | `features/yard/` | State ของ Yard panel (open/close, selected zone) |
-| `useSlotCard` | `features/yard/` | State ของ slot card แต่ละช่อง |
-| `usePredictionData` | `features/prediction/` | Fetch + filter + pagination สำหรับ prediction report |
-| `useLiveClock` | `shared/hooks/` | นาฬิกาที่อัปเดตทุกวินาที |
-| `useModal` | `shared/hooks/` | เปิด/ปิด modal พร้อม payload |
+| `useDashboardData` | `features/dashboard/` | อ่าน dashboard snapshot (REST ครั้งแรก + realtime) |
+| `useTruckQueues` | `features/queue/` | filter / sort / search สำหรับ truck queue |
+| `useYardPanel` · `useSlotCard` | `features/yard/` | state ของ Yard panel / slot card |
+| `usePredictionData` | `features/prediction/` | fetch + filter + pagination |
+| `useBackendNotifications` | `features/notifications/` | อ่าน notifications ที่มากับ snapshot |
+| `useLatestNotificationToast` | `features/notifications/` | แสดง toast ของแจ้งเตือนล่าสุด |
+| `useNotificationMenuState` | `features/notifications/` | state ของเมนูแจ้งเตือน |
+| `useNotificationSound` | `features/notifications/` | เล่นเสียงแจ้งเตือน |
+| `useRealtimeSnapshot` | `shared/hooks/` | core: โหลด REST ครั้งแรก + subscribe WebSocket + อัปเดต snapshot |
+| `createRealtimeContext` | `shared/hooks/` | factory สร้าง Provider/Context ของ realtime แต่ละ feature |
+| `useLiveClock` · `useModal` | `shared/hooks/` | นาฬิกา / เปิด-ปิด modal |
 
 ---
 
 ## การเชื่อมต่อ API และ WebSocket
 
 ### REST API
+ใช้ Axios ([services/apiClient.js](src/services/apiClient.js)) เรียก Backend ที่ `VITE_API_ORIGIN`:
 
-ใช้ Axios เรียก Backend ที่ `VITE_API_ORIGIN`:
-
-```js
-// ตัวอย่าง: ดึง snapshot
-GET http://127.0.0.1:8000/api/dashboard/snapshot/?plant_code=COM20060001
+```text
+GET http://127.0.0.1:3004/api/dashboard/snapshot/?plant_code=COM20060001
+GET http://127.0.0.1:3004/api/analytics/throughput/?preset=7d&group_by=day
 ```
 
 ### WebSocket
+เชื่อมต่อที่ `VITE_WS_ORIGIN` ด้วย `react-use-websocket` — มี **3 streams** ตรงกับ backend:
 
-เชื่อมต่อที่ `VITE_WS_ORIGIN` ด้วย `react-use-websocket`:
+| Stream | URL | รอบ push |
+| ------ | --- | -------- |
+| Dashboard | `/ws/dashboard/stream/` | 10 วินาที |
+| Predictions | `/ws/predictions/stream/` | 30 วินาที (เฉพาะ preset = today) |
+| Analytics | `/ws/analytics/stream/` | 60 วินาที (เฉพาะ preset = today) |
 
-```js
-// WebSocket URL
-ws://127.0.0.1:8000/ws/dashboard/stream/?plant_code=COM20060001
+Server push message รูปแบบ `{ "event": "<feature>.snapshot", "payload": {...} }` อัตโนมัติ
+
+- payload ของ dashboard = REST snapshot (`summary`, `truck_queues`, `yards`) **+ `notifications`** ที่มีเฉพาะ stream นี้
+- payload ของ predictions/analytics = โครงเดียวกับ `/predictions/snapshot/` และ `/analytics/snapshot/`
+
+(รายละเอียด event + ตัวอย่าง payload เต็ม ดู [../README.md](../README.md#websocket-real-time))
+
+---
+
+## การไหลของข้อมูล Real-time
+
+ทุก feature ที่มี real-time ใช้ pattern เดียวกัน (reuse ผ่าน `createRealtimeContext` + `useRealtimeSnapshot`):
+
+```text
+Provider (เช่น DashboardRealtimeProvider)
+  └─ useRealtimeSnapshot({ socketUrl, event, fetchInitial, enabled })
+       ├─ 1) fetchInitial() : โหลด snapshot ครั้งแรกผ่าน REST
+       ├─ 2) subscribe WebSocket (ถ้า enabled)
+       └─ 3) เมื่อได้ event ตรงชื่อ → อัปเดต snapshot จาก payload
+  └─ useContext → useDashboardData / useKpiData / ... → Components
 ```
 
-Server จะ push ข้อมูลใหม่ให้อัตโนมัติทุก **10 วินาที** โดยไม่ต้องร้องขอ
+**กฎสำคัญ:** Analytics และ Prediction จะเปิด WebSocket **เฉพาะเมื่อ `preset === 'today'`** เท่านั้น
+([useRealtimeSnapshot.js](src/shared/hooks/useRealtimeSnapshot.js)) — ช่วงเวลาย้อนหลังอื่น ๆ ใช้ REST ปกติ
+(เพราะข้อมูลย้อนหลังไม่เปลี่ยน จึงไม่ต้อง stream)
+
+- **Auto-reconnect:** reconnect อัตโนมัติเมื่อ connection ขาด
+- **Socket sharing:** ใช้ `share: true` กัน connection ซ้ำสำหรับ URL เดียวกัน
+- **Connection status:** แสดงสถานะการเชื่อมต่อผ่าน `ConnectionStatusBanner`

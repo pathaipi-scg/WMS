@@ -12,6 +12,23 @@ _PRESET_DAYS = {
 }
 
 
+def parse_datetime(value, *, strip_tz: bool = False) -> datetime | None:
+    """Parse a DB value (datetime object or ISO string) into a datetime.
+
+    Returns None for empty/invalid values. With ``strip_tz=True`` the result is
+    made naive (tzinfo dropped) to match the log DB's naive timestamps.
+    """
+    if not value:
+        return None
+    if isinstance(value, datetime):
+        return value.replace(tzinfo=None) if strip_tz else value
+    try:
+        dt = datetime.fromisoformat(str(value))
+    except (ValueError, TypeError):
+        return None
+    return dt.replace(tzinfo=None) if strip_tz else dt
+
+
 def get_today_range():
     today = timezone.localdate()
     start_dt = datetime.combine(today, time.min)

@@ -24,7 +24,7 @@ from sklearn.model_selection import KFold
 from src.utils.paths import MODELS_DIR, PROCESSED_DATA_DIR
 from src.features.engineer import FEATURE_COLS, TARGET
 
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 RANDOM_STATE = 42
 
@@ -60,7 +60,7 @@ def load_data() -> tuple[pd.DataFrame, pd.DataFrame]:
 
     train_df = pd.read_csv(train_path, encoding="utf-8-sig")
     test_df  = pd.read_csv(test_path,  encoding="utf-8-sig")
-    log.info("Loaded train=%d rows, test=%d rows", len(train_df), len(test_df))
+    logger.info("Loaded train=%d rows, test=%d rows", len(train_df), len(test_df))
     return train_df, test_df
 
 
@@ -120,7 +120,7 @@ def tune_xgboost(X_train: pd.DataFrame, y_train: pd.Series, n_trials: int = 100)
     best = study.best_params.copy()
     best["n_estimators"] = study.best_trial.user_attrs["best_iteration"] + 1
     best.update({"random_state": RANDOM_STATE, "n_jobs": -1, "verbosity": 0})
-    log.info("Best Optuna params: %s", best)
+    logger.info("Best Optuna params: %s", best)
     return best
 
 
@@ -155,7 +155,7 @@ def save_artifacts(
 
     model_path = MODELS_DIR / "best_model_totaltime.joblib"
     joblib.dump(model, model_path)
-    log.info("Model saved -> %s", model_path)
+    logger.info("Model saved -> %s", model_path)
 
     metadata = {
         "feature_cols": feature_cols,
@@ -168,7 +168,7 @@ def save_artifacts(
     }
     meta_path = MODELS_DIR / "feature_metadata.json"
     meta_path.write_text(json.dumps(metadata, indent=2, ensure_ascii=False), encoding="utf-8")
-    log.info("Metadata saved -> %s", meta_path)
+    logger.info("Metadata saved -> %s", meta_path)
 
 
 # ---------------------------------------------------------------------------
@@ -217,22 +217,22 @@ def main() -> None:
 
     # --- Train ---
     if args.tune:
-        log.info("Running Optuna with %d trials ...", args.n_trials)
+        logger.info("Running Optuna with %d trials ...", args.n_trials)
         params = tune_xgboost(X_train, y_train, n_trials=args.n_trials)
     else:
-        log.info("Using default (notebook) hyperparameters")
+        logger.info("Using default (notebook) hyperparameters")
         params = DEFAULT_PARAMS.copy()
 
-    log.info("Training XGBoost ...")
+    logger.info("Training XGBoost ...")
     model = xgb.XGBRegressor(**params)
     model.fit(X_train, y_train)
 
     # --- Evaluate ---
     train_metrics = evaluate(model, X_train, y_train, "train")
     test_metrics  = evaluate(model, X_test,  y_test,  "test")
-    log.info("Train | MAE=%.2f  RMSE=%.2f  R2=%.3f",
+    logger.info("Train | MAE=%.2f  RMSE=%.2f  R2=%.3f",
              train_metrics["mae"], train_metrics["rmse"], train_metrics["r2"])
-    log.info("Test  | MAE=%.2f  RMSE=%.2f  R2=%.3f",
+    logger.info("Test  | MAE=%.2f  RMSE=%.2f  R2=%.3f",
              test_metrics["mae"],  test_metrics["rmse"],  test_metrics["r2"])
 
     # --- Save ---
@@ -245,7 +245,7 @@ def main() -> None:
         global_rolling_mean=global_rolling_mean,
         metrics={"train": train_metrics, "test": test_metrics},
     )
-    log.info("Done.")
+    logger.info("Done.")
 
 
 if __name__ == "__main__":

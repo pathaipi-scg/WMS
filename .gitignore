@@ -1,7 +1,58 @@
-venv/
-backend/venv/
-frontend/node_modules/
-frontend/dist/
+# ============================================================
+# Root .gitignore for the WMS monorepo (backend + frontend)
+# ============================================================
+
+# ----- Python / Django (backend) -----
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.so
+# stray bytecode temp files from concurrent runs (e.g. *.pyc.123456)
+*.pyc.*
+# virtual environments
+venv/
+.venv/
+env/
+ENV/
+backend/venv/
+# tooling caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+# Django runtime
+*.sqlite3
+backend/staticfiles/
+
+# ----- Node / Vite (frontend) -----
+node_modules/
+dist/
+build/
+coverage/
+.vite/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ----- Secrets / environment -----
 .env
+.env.*
+!.env.example
+
+# ----- Logs -----
+*.log
+
+# ----- OS / editor cruft -----
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+
+LOGIC.md
+LOGIC.pdf
+!scripts/
+!LOGIC.md

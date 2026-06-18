@@ -112,7 +112,21 @@ DATABASES = {
                 'yes' if get_env_bool('DB_TRUST_SERVER_CERTIFICATE', True) else 'no'
             ),
         },
-    }
+    },
+    'log': {
+        'ENGINE': os.getenv('LOG_DB_ENGINE', 'mssql'),
+        'NAME': os.getenv('LOG_DB_NAME'),
+        'USER': os.getenv('LOG_DB_USER'),
+        'PASSWORD': os.getenv('LOG_DB_PASSWORD'),
+        'HOST': os.getenv('LOG_DB_HOST'),
+        'PORT': os.getenv('LOG_DB_PORT', '1433'),
+        'OPTIONS': {
+            'driver': os.getenv('DB_DRIVER', 'ODBC Driver 17 for SQL Server'),
+            'TrustServerCertificate': (
+                'yes' if get_env_bool('LOG_DB_TRUST_SERVER_CERTIFICATE', True) else 'no'
+            ),
+        },
+    },
 }
 
 
@@ -148,16 +162,22 @@ REST_FRAMEWORK = {
 SPECTACULAR_SETTINGS = {
     'TITLE': 'WMS Dashboard API',
     'DESCRIPTION': (
-        'API สำหรับระบบ Warehouse Management System\n\n'
-        '**Dashboard**: สรุปข้อมูลรถบรรทุก, snapshot, คิว และลานจ่าย\n\n'
-        '**Predictions**: รายงานผลพยากรณ์เวลาโหลดสินค้าด้วย ML (XGBoost)\n\n'
-        '---\n'
-        '**WebSocket**: `ws://<host>/ws/dashboard/stream/?plant_code=COM20060001` — real-time updates'
+        'API สำหรับ WMS Dashboard ที่ให้ข้อมูลสถานะรถบรรทุก, คิว, ลานจ่าย และทำนายเวลารวมของรถในโรงงานแบบ real-time'
     ),
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
     'TAGS': [
-        {'name': 'Dashboard', 'description': 'ข้อมูล Dashboard รถบรรทุกและลานจ่าย'},
-        {'name': 'Predictions', 'description': 'รายงานผลการพยากรณ์ด้วย ML (XGBoost)'},
+        {
+            'name': 'Dashboard',
+            'description': 'หน้าภาพรวม — สรุปสถานะรถบรรทุก, คิว และลานจ่ายแบบ real-time',
+        },
+        {
+            'name': 'Predictions',
+            'description': 'หน้ารายงานผลโมเดล — ทำนายเวลารวมของรถในโรงงานด้วย ML (XGBoost) และ metrics ความแม่นยำ',
+        },
+        {
+            'name': 'Analytics',
+            'description': 'หน้าวิเคราะห์ข้อมูล — KPI, ปริมาณรถ, สัดส่วนคิว, ปริมาณสินค้า และเวลาเฉลี่ยแยกตามช่วงเวลา',
+        },
     ],
 }

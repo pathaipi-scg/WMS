@@ -1,28 +1,7 @@
 from ..constants import PLANT_NAME
 from ..utils.date_ranges import get_date_range
 from ..utils.db import fetch_all_dicts
-
-# ตรงกับ _CAR_TYPE_LABEL ใน prediction.py
-_TRUCK_TYPE_CASE = """
-    CASE CarType
-        WHEN 4            THEN N'4 ล้อ'
-        WHEN 1000000008   THEN N'4 ล้อ'
-        WHEN 6            THEN N'6 ล้อ'
-        WHEN 1000000003   THEN N'6 ล้อ'
-        WHEN 10           THEN N'10 ล้อ'
-        WHEN 1000000000   THEN N'10 ล้อ'
-        WHEN 1000000004   THEN N'10 ล้อ'
-        WHEN 18           THEN N'เทรเลอร์'
-        WHEN 22           THEN N'เทรเลอร์'
-        WHEN 1000000001   THEN N'เทรเลอร์'
-        WHEN 1000000002   THEN N'เทรเลอร์'
-        WHEN 1000000005   THEN N'เทรเลอร์'
-        WHEN 1000000006   THEN N'เทรเลอร์'
-        WHEN 1000000007   THEN N'เทรเลอร์'
-        WHEN 1000000009   THEN N'เทรเลอร์'
-        ELSE              N'อื่นๆ'
-    END
-"""
+from ..utils.sql_fragments import TRUCK_TYPE_CASE
 
 
 def get_avg_time_by_truck_type_data(
@@ -42,7 +21,7 @@ def get_avg_time_by_truck_type_data(
     rows = fetch_all_dicts(f"""
         SELECT
             {period_expr} AS period_key,
-            {_TRUCK_TYPE_CASE} AS truck_type,
+            {TRUCK_TYPE_CASE} AS truck_type,
             AVG(CAST(
                 CASE
                     WHEN CarConfirm IS NOT NULL
@@ -81,7 +60,7 @@ def get_avg_time_by_truck_type_data(
           AND OperatorCarConfirm IS NOT NULL
         GROUP BY
             {period_expr},
-            {_TRUCK_TYPE_CASE}
+            {TRUCK_TYPE_CASE}
         ORDER BY period_key, truck_type
     """, params)
 

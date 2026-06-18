@@ -1,4 +1,4 @@
-from ..constants import PLANT_NAME
+from ..constants import OVERTIME_THRESHOLD_MINUTES, PLANT_NAME
 from ..utils.date_ranges import get_date_range, get_prev_date_range
 from ..utils.db import fetch_scalar
 
@@ -64,7 +64,7 @@ def _kpi_data(start_dt, end_dt):
           AND PostingTime IS NOT NULL
     """, params)
 
-    overtime_count = fetch_scalar("""
+    overtime_count = fetch_scalar(f"""
         SELECT COUNT(*)
         FROM [OBM_DWMS].[dbo].[vwTimeStampDashbaord]
         WHERE PlantName = %s
@@ -72,7 +72,7 @@ def _kpi_data(start_dt, end_dt):
           AND OperatorCarConfirm <= %s
           AND OperatorCarConfirm IS NOT NULL
           AND PostingTime IS NOT NULL
-          AND DATEDIFF(MINUTE, CAST(OperatorCarConfirm AS DATETIME), CAST(PostingTime AS DATETIME)) > 120
+          AND DATEDIFF(MINUTE, CAST(OperatorCarConfirm AS DATETIME), CAST(PostingTime AS DATETIME)) > {OVERTIME_THRESHOLD_MINUTES}
     """, params)
 
     # rate คิดจากรถที่เสร็จแล้ว (มี PostingTime) ไม่ใช่รถทั้งหมด

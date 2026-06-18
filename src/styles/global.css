@@ -1,0 +1,99 @@
+@import "tailwindcss";
+
+.notification-popover {
+  transform-origin: top right;
+  animation: notification-pop 500ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: opacity, transform;
+}
+
+.notification-toast {
+  animation: notification-toast-slide 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: opacity, transform;
+}
+
+@keyframes notification-pop {
+  from {
+    opacity: 0;
+    transform: translate(12px, -10px) scale(0.88);
+  }
+
+  70% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1.02);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+}
+
+@keyframes notification-toast-slide {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .notification-popover {
+    animation: none;
+  }
+
+  .notification-toast {
+    animation: none;
+  }
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+}
+
+/* ลบ focus outline บน Recharts ทุกกราฟเมื่อคลิก */
+.recharts-wrapper,
+.recharts-wrapper svg,
+.recharts-wrapper *:focus,
+.recharts-wrapper *:focus-visible {
+  outline: none !important;
+}
+
+.queue-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5f5 transparent; /* light slate */
+}
+
+/* Chrome, Edge, Safari */
+.queue-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+/* Track */
+.queue-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 4px 0;
+}
+
+/* Thumb (ตัวเลื่อน) */
+.queue-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #cbd5f5, #94a3b8);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+  transition: all 0.2s ease;
+}
+
+/* Hover */
+.queue-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #94a3b8, #64748b);
+}
+
+/* Active (ตอนลาก) */
+.queue-scrollbar::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(180deg, #64748b, #475569);
+}

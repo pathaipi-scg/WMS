@@ -1,4 +1,4 @@
-from ..constants import PLANT_NAME
+from ..constants import OVERTIME_THRESHOLD_MINUTES, PLANT_NAME
 from ..utils.date_ranges import get_today_range
 from ..utils.db import fetch_scalar
 from ..utils.sql_fragments import ACTIVE_PACK_STATUSES, EFFECTIVE_DATE_CASE, PACK_STATUS_OPERATOR_COMPLETED
@@ -80,13 +80,13 @@ def get_completed_count():
 
 
 def get_overtime_trucks_count():
-    return _query_count("""
+    return _query_count(f"""
         SELECT COUNT(*)
         FROM [OBM_DWMS].[dbo].[vwTimeStampDashbaord]
         WHERE PlantName = %s
           AND OperatorCarConfirm >= %s
           AND OperatorCarConfirm <= %s
-          AND DATEDIFF(MINUTE, CAST(OperatorCarConfirm AS DATETIME), PostingTime) > 120
+          AND DATEDIFF(MINUTE, CAST(OperatorCarConfirm AS DATETIME), PostingTime) > {OVERTIME_THRESHOLD_MINUTES}
     """)
 
 

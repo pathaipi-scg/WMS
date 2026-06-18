@@ -6,7 +6,7 @@ import logging
 import threading
 from pathlib import Path
 
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 _predictor = None
 _lock = threading.Lock()
@@ -26,11 +26,11 @@ def get_predictor():
 
         from .predict import Predictor
 
-        log.info("Loading ML predictor from %s ...", MODELS_DIR)
+        logger.info("Loading ML predictor from %s ...", MODELS_DIR)
         _predictor = Predictor(
-            model_path=MODELS_DIR / "best_model_totaltime.joblib",
+            model_path=MODELS_DIR / "Model_V.2.joblib",
             metadata_path=MODELS_DIR / "feature_metadata.json",
         )
-        log.info("ML predictor ready.")
+        logger.info("ML predictor ready.")
 
     return _predictor

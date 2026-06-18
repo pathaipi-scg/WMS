@@ -5,7 +5,7 @@ from ..utils.db import fetch_all_dicts
 from ..utils.sql_fragments import ACTIVE_PACK_STATUSES, EFFECTIVE_DATE_CASE_V
 
 
-def build_channel_payload(row):
+def _build_channel_payload(row):
     return {
         "slot_name": row["slot_name"],
         "slot_code": row["slot_code"],
@@ -30,6 +30,7 @@ def build_channel_payload(row):
         "waiting_time": row.get("waiting_time", 0),
     }
 
+
 def group_post_locations(rows):
     yards_map = OrderedDict()
 
@@ -43,7 +44,7 @@ def group_post_locations(rows):
                 "channels": [],
             }
 
-        yards_map[yard_key]["channels"].append(build_channel_payload(row))
+        yards_map[yard_key]["channels"].append(_build_channel_payload(row))
 
     return list(yards_map.values())
 
@@ -145,7 +146,11 @@ def get_post_locations_rows(plant_code=PLANT_CODE, active_minutes=DEFAULT_FORKLI
                 p.ToLocationCode,
                 p.UserCreateCode,
                 p.UserCreate,
-                MAX(p.StampDateTime) AS LastStampDateTime
+                p.StampDateTime,
+                ROW_NUMBER() OVER (
+                    PARTITION BY p.UserCreate
+                    ORDER BY p.StampDateTime DESC
+                ) AS rn
             FROM [OBM_DWMS].[dbo].[PalletLogs_Today] p
             INNER JOIN [OBM_DWMS].[dbo].[PostLocations] pl2
                 ON pl2.Code = p.ToLocationCode
@@ -153,10 +158,6 @@ def get_post_locations_rows(plant_code=PLANT_CODE, active_minutes=DEFAULT_FORKLI
             WHERE p.StampDateTime >= DATEADD(MINUTE, -%s, GETDATE())
             AND p.ToLocationCode IS NOT NULL
             AND p.UserCreate IS NOT NULL
-            GROUP BY
-                p.ToLocationCode,
-                p.UserCreateCode,
-                p.UserCreate
         ),
 
         ForkliftInChannel AS
@@ -165,8 +166,9 @@ def get_post_locations_rows(plant_code=PLANT_CODE, active_minutes=DEFAULT_FORKLI
                 fr.ToLocationCode AS PostLocationCode,
                 COUNT(*) AS ForkliftCount,
                 STRING_AGG(fr.UserCreate, ', ') AS ForkliftDriverNames,
-                MAX(fr.LastStampDateTime) AS LastForkliftActivityTime
+                MAX(fr.StampDateTime) AS LastForkliftActivityTime
             FROM ForkliftRaw fr
+            WHERE fr.rn = 1
             GROUP BY fr.ToLocationCode
         )
 

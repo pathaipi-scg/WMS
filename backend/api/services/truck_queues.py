@@ -1,19 +1,19 @@
 from ..constants import PLANT_NAME
 from ..utils.date_ranges import get_today_range
 from ..utils.db import fetch_all_dicts
-from ..utils.sql_fragments import ACTIVE_PACK_STATUSES, EFFECTIVE_DATE_CASE
+from ..utils.sql_fragments import (
+    ACTIVE_PACK_STATUSES,
+    EFFECTIVE_DATE_CASE,
+    PACK_STATUS_OPERATOR_COMPLETED,
+    QUEUE_TYPE_CASE,
+)
 
 _TRUCK_QUEUES_SQL = f"""
     SELECT
         TruckSeqNo AS sequence,
         TruckSeqNo AS truckSeqNo,
         CarNo AS licensePlate,
-        CASE
-            WHEN LTRIM(RTRIM(PickListType)) = 'SmartQ' THEN N'SmartQ'
-            WHEN LTRIM(RTRIM(PickListType)) = 'Walk-in' AND ISNULL(PrepareForward, 'N') = 'N' THEN N'Walk in'
-            WHEN LTRIM(RTRIM(PickListType)) = 'Walk-in' AND PrepareForward = 'Y' THEN N'ล่วงหน้า'
-            ELSE N'-'
-        END AS queueType,
+        {QUEUE_TYPE_CASE} AS queueType,
         LTRIM(RTRIM(PickListType)) AS rawPickListType,
         ISNULL(PrepareForward, 'N') AS rawPrepareForward,
         CarType AS rawCarType,
@@ -64,12 +64,9 @@ _TRUCK_QUEUES_SQL = f"""
         OperatorCarConfirm AS arrivalDate,
         CarConfirm AS callDate,
         FirstPostPallet AS startDate,
+        LastPostPallet AS completedDate,
         CASE
-            WHEN PackListStatus = 'CHECKERCOMPLETED' THEN LastPostPallet
-            ELSE NULL
-        END AS completedDate,
-        CASE
-            WHEN PackListStatus = 'OPERATORCOMPLETED' THEN PostingTime
+            WHEN PackListStatus = {PACK_STATUS_OPERATOR_COMPLETED} THEN PostingTime
             ELSE NULL
         END AS exitDate,
         PackListStatus AS packListStatus,
@@ -77,6 +74,7 @@ _TRUCK_QUEUES_SQL = f"""
         CarConfirm AS carConfirm,
         FirstPostPallet AS firstPallet,
         LastPostPallet AS lastPostPallet,
+        CheckerClose AS checkerClose,
         PostingTime AS postingTime,
 
         CASE
