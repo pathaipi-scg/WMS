@@ -5,6 +5,7 @@ Sensitive values are loaded from ``backend/.env`` so secrets and database
 credentials can be managed without editing this file.
 """
 
+import json
 import os
 from pathlib import Path
 
@@ -40,6 +41,19 @@ def get_env_list(name: str, default: list[str] | None = None) -> list[str]:
         return default or []
 
     return [item.strip() for item in value.split(',') if item.strip()]
+
+
+def get_env_json(name: str, default):
+    value = os.getenv(name)
+    if not value:
+        return default
+
+    try:
+        return json.loads(value)
+    except json.JSONDecodeError:
+        import logging
+        logging.getLogger(__name__).warning('ไม่สามารถอ่านค่า %s เป็น JSON ได้ — ใช้ค่าเริ่มต้นแทน', name)
+        return default
 
 
 load_env_file(ENV_FILE)
@@ -158,6 +172,45 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
+
+
+# ---------------------------------------------------------------------------
+# Auth — login เฉพาะผู้ดูแล (อ่านค่าทั้งหมดจาก env, ไม่มีตาราง user)
+# ---------------------------------------------------------------------------
+
+# รายชื่อโรงงานที่เลือกได้ — ตั้งผ่าน env WMS_PLANTS (JSON) เพื่อเพิ่มโรงงานได้โดยไม่แก้โค้ด
+# ตัวอย่าง: [{"code": "COM20060001", "name": "SB1"}, {"code": "COM20060002", "name": "SB2"}]
+WMS_PLANTS = get_env_json('WMS_PLANTS', [
+    {'code': 'COM20060001', 'name': 'SB1'},
+])
+
+# โรงงานที่ผู้ใช้ทั่วไป (ไม่ได้ login) เห็นได้ — ค่าว่าง = ใช้โรงงานแรกใน WMS_PLANTS
+WMS_PUBLIC_PLANT_CODE = os.getenv('WMS_PUBLIC_PLANT_CODE') or (
+    WMS_PLANTS[0]['code'] if WMS_PLANTS else None
+)
+
+# ไฟล์เก็บโรงงานที่ admin เพิ่มผ่าน UI (เสริมจาก WMS_PLANTS)
+WMS_PLANTS_STORE = os.getenv('WMS_PLANTS_STORE', str(BASE_DIR / 'plants_store.json'))
+
+# ผู้ใช้ — ตั้งผ่าน env WMS_USERS (JSON list ของ {username, password, role, plant_code})
+#   role = "admin"   → เห็นได้ทุกโรงงาน (ไม่ต้องระบุ plant_code)
+#   role = "factory" → เห็นได้เฉพาะ plant_code ที่ระบุ
+WMS_USERS = get_env_json('WMS_USERS', [])
+
+# ทางลัดสำหรับ admin ส่วนกลาง 1 คน (ตามที่ต้องการตอนนี้) — ค่าเริ่มต้น admin/admin สำหรับ dev
+# โปรดตั้ง WMS_ADMIN_USERNAME / WMS_ADMIN_PASSWORD ใน .env ของ production
+_admin_username = os.getenv('WMS_ADMIN_USERNAME', 'admin')
+_admin_password = os.getenv('WMS_ADMIN_PASSWORD', 'admin')
+if _admin_username and _admin_password and not any(
+    u.get('username') == _admin_username for u in WMS_USERS
+):
+    WMS_USERS = [
+        {'username': _admin_username, 'password': _admin_password, 'role': 'admin'},
+        *WMS_USERS,
+    ]
+
+# อายุ token (ชั่วโมง) — เซ็นด้วย SECRET_KEY ของ Django
+WMS_AUTH_TOKEN_TTL_HOURS = int(os.getenv('WMS_AUTH_TOKEN_TTL_HOURS', '12'))
 
 SPECTACULAR_SETTINGS = {
     'TITLE': 'WMS Dashboard API',

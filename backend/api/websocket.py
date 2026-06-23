@@ -5,6 +5,7 @@ from urllib.parse import parse_qs
 
 from asgiref.sync import sync_to_async
 
+from .auth import can_access, public_plant_code, verify_token
 from .constants import PLANT_CODE
 from .services.analytics_snapshot import analytics_broadcaster, analytics_snapshot_store
 from .services.dashboard_snapshot import dashboard_broadcaster, dashboard_snapshot_store
@@ -34,10 +35,22 @@ def make_stream_application(*, event_name, broadcaster, get_initial_payload):
     async def stream_application(scope, receive, send):
         query_params = parse_qs(scope.get("query_string", b"").decode("utf-8"))
         plant_code = _get_query_value(query_params, "plant_code", PLANT_CODE)
+        principal = verify_token(_get_query_value(query_params, "token", None))
 
         connect_message = await receive()
 
         if connect_message.get("type") != "websocket.connect":
+            return
+
+        # บังคับสิทธิ์โรงงานแบบเดียวกับ REST: ผู้ใช้ทั่วไปดูได้เฉพาะโรงงานสาธารณะ,
+        # ผู้ที่ login แล้วดูได้ตามสิทธิ์ — ปฏิเสธ handshake ด้วย close ถ้าไม่ผ่าน
+        if principal:
+            allowed = can_access(principal, plant_code)
+        else:
+            allowed = plant_code == public_plant_code()
+
+        if not allowed:
+            await send({"type": "websocket.close", "code": 4401})
             return
 
         await send({"type": "websocket.accept"})

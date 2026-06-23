@@ -5,6 +5,8 @@ from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiRespon
 from rest_framework import serializers
 from rest_framework.decorators import api_view
 
+from .auth import authenticate, issue_token, visible_plants, default_plant_code, require_auth
+from .plants_store import add_plant, remove_plant, PlantExistsError, PlantNotFoundError
 from .constants import PLANT_CODE
 from .services.dashboard_snapshot import dashboard_snapshot_store
 from .services.dashboard_summary import get_dashboard_summary_data
@@ -668,3 +670,135 @@ def analytics_notification_summary(request):
             {"success": False, "message": "เกิดข้อผิดพลาดในการดึงข้อมูลการแจ้งเตือน", "error": str(error)},
             status=500,
         )
+
+
+# ---------------------------------------------------------------------------
+# Auth — login เฉพาะผู้ดูแล
+# ---------------------------------------------------------------------------
+
+def _session_payload(principal, token):
+    """ข้อมูล session ที่ส่งกลับให้ frontend หลัง login / ตรวจ token"""
+    plants = visible_plants(principal)
+    return {
+        "token": token,
+        "user": {"username": principal["username"], "role": principal["role"]},
+        "is_admin": principal["role"] == "admin",
+        "plants": plants,
+        "default_plant_code": default_plant_code(principal),
+    }
+
+
+@extend_schema(
+    tags=["Auth"],
+    summary="เข้าสู่ระบบ",
+    description="ตรวจสอบ username/password กับค่าใน environment แล้วคืน token พร้อมรายชื่อโรงงานที่มีสิทธิ์",
+    request=inline_serializer("LoginRequest", fields={
+        "username": serializers.CharField(),
+        "password": serializers.CharField(),
+    }),
+    responses={
+        200: inline_serializer("LoginResponse", fields={
+            "token":              serializers.CharField(),
+            "is_admin":           serializers.BooleanField(),
+            "default_plant_code": serializers.CharField(allow_null=True),
+            "user":               serializers.DictField(),
+            "plants":             serializers.ListField(),
+        }),
+        401: OpenApiResponse(description="ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง"),
+    },
+)
+@api_view(['POST'])
+def auth_login(request):
+    username = (request.data.get("username") or "").strip()
+    password = request.data.get("password") or ""
+
+    principal = authenticate(username, password)
+    if not principal:
+        return _json_response({"detail": "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง"}, status=401)
+
+    token = issue_token(principal)
+    return _json_response(_session_payload(principal, token))
+
+
+@extend_schema(
+    tags=["Auth"],
+    summary="ข้อมูลผู้ใช้ปัจจุบัน",
+    description="ตรวจสอบ token ที่แนบมา (header `Authorization: Bearer ...`) แล้วคืนข้อมูล session เดิม",
+    responses={
+        200: OpenApiResponse(description="ข้อมูล session ของผู้ใช้"),
+        401: OpenApiResponse(description="ยังไม่ได้เข้าสู่ระบบ / token หมดอายุ"),
+    },
+)
+@api_view(['GET'])
+@require_auth
+def auth_me(request):
+    token = request.META.get("HTTP_AUTHORIZATION", "")[len("Bearer "):].strip()
+    return _json_response(_session_payload(request.principal, token))
+
+
+@extend_schema(
+    tags=["Auth"],
+    summary="เพิ่มโรงงาน (เฉพาะผู้ดูแลส่วนกลาง)",
+    description="เพิ่มโรงงานใหม่เข้าระบบ — เฉพาะ role admin เท่านั้น คืนรายชื่อโรงงานล่าสุดหลังเพิ่ม",
+    request=inline_serializer("AddPlantRequest", fields={
+        "code": serializers.CharField(help_text="รหัสโรงงาน"),
+        "name": serializers.CharField(help_text="ชื่อโรงงาน"),
+    }),
+    responses={
+        200: OpenApiResponse(description="รายชื่อโรงงานล่าสุด"),
+        400: OpenApiResponse(description="ข้อมูลไม่ครบ"),
+        403: OpenApiResponse(description="ไม่ใช่ผู้ดูแลส่วนกลาง"),
+        409: OpenApiResponse(description="รหัสโรงงานซ้ำ"),
+    },
+)
+@api_view(['POST'])
+@require_auth
+def auth_add_plant(request):
+    principal = request.principal
+    if principal.get("role") != "admin":
+        return _json_response({"detail": "เฉพาะผู้ดูแลส่วนกลางเท่านั้นที่เพิ่มโรงงานได้"}, status=403)
+
+    try:
+        add_plant(request.data.get("code"), request.data.get("name"))
+    except PlantExistsError:
+        return _json_response({"detail": "มีรหัสโรงงานนี้อยู่แล้ว"}, status=409)
+    except ValueError as error:
+        return _json_response({"detail": str(error)}, status=400)
+
+    return _json_response({
+        "plants": visible_plants(principal),
+        "default_plant_code": default_plant_code(principal),
+        "is_admin": True,
+    })
+
+
+@extend_schema(
+    tags=["Auth"],
+    summary="ลบโรงงาน (เฉพาะผู้ดูแลส่วนกลาง)",
+    description="ลบโรงงานที่เพิ่มผ่าน UI — เฉพาะ role admin; ลบโรงงานที่ตั้งค่าผ่าน env ไม่ได้",
+    responses={
+        200: OpenApiResponse(description="รายชื่อโรงงานล่าสุด"),
+        400: OpenApiResponse(description="ลบไม่ได้ (เช่น เป็นโรงงานจาก env)"),
+        403: OpenApiResponse(description="ไม่ใช่ผู้ดูแลส่วนกลาง"),
+        404: OpenApiResponse(description="ไม่พบโรงงาน"),
+    },
+)
+@api_view(['DELETE'])
+@require_auth
+def auth_delete_plant(request, code):
+    principal = request.principal
+    if principal.get("role") != "admin":
+        return _json_response({"detail": "เฉพาะผู้ดูแลส่วนกลางเท่านั้นที่ลบโรงงานได้"}, status=403)
+
+    try:
+        remove_plant(code)
+    except PlantNotFoundError:
+        return _json_response({"detail": "ไม่พบโรงงานนี้"}, status=404)
+    except ValueError as error:
+        return _json_response({"detail": str(error)}, status=400)
+
+    return _json_response({
+        "plants": visible_plants(principal),
+        "default_plant_code": default_plant_code(principal),
+        "is_admin": True,
+    })
