@@ -39,6 +39,10 @@ yarn-error.log*
 .env.*
 !.env.example
 
+# ----- Runtime-generated data -----
+# โรงงานที่ admin เพิ่มผ่าน UI (สร้างตอนรัน ไม่ควรเข้า repo)
+backend/plants_store.json
+
 # ----- Logs -----
 *.log
 

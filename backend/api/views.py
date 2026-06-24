@@ -18,6 +18,10 @@ from .services.predictions_snapshot import predictions_snapshot_store
 from .services.analytics_snapshot import analytics_snapshot_store
 from .services.analytics_kpi_summary import get_kpi_summary_data
 from .services.analytics_throughput import get_throughput_data
+from .services.analytics_throughput_by_truck_type import get_throughput_by_truck_type_data
+from .services.analytics_hourly_breakdown import get_hourly_breakdown_data
+from .services.analytics_time_distribution import get_time_distribution_data
+from .services.analytics_phase_distribution import get_phase_distribution_data
 from .services.analytics_queue_distribution import get_queue_distribution_data
 from .services.analytics_product_volume import get_product_volume_data
 from .services.analytics_avg_time_by_truck_type import get_avg_time_by_truck_type_data
@@ -549,6 +553,120 @@ def analytics_throughput(request):
         logger.exception("Analytics throughput failed")
         return _json_response(
             {"success": False, "message": "เกิดข้อผิดพลาดในการดึงข้อมูลปริมาณรถ", "error": str(error)},
+            status=500,
+        )
+
+
+@extend_schema(
+    tags=["Analytics"],
+    summary="ปริมาณรถเข้าตามช่วงเวลา แยกตามประเภทรถ",
+    description="คืนค่าจำนวนรถเข้า (OperatorCarConfirm) จัดกลุ่มตามชั่วโมง/วัน และแยกตามประเภทรถ สำหรับกราฟเส้นหลายเส้น",
+    parameters=[_PRESET_PARAM, _GROUP_BY_PARAM, _DATE_FROM_PARAM, _DATE_TO_PARAM],
+    responses={
+        200: OpenApiResponse(description="ปริมาณรถแยกตามประเภท {period, '4 ล้อ', '6 ล้อ', ...}"),
+        500: OpenApiResponse(description="เกิดข้อผิดพลาดในการดึงข้อมูล"),
+    },
+)
+@api_view(['GET'])
+def analytics_throughput_by_truck_type(request):
+    preset    = request.GET.get("preset", "today")
+    group_by  = request.GET.get("group_by", "day")
+    date_from = request.GET.get("date_from")
+    date_to   = request.GET.get("date_to")
+    try:
+        return _json_response(get_throughput_by_truck_type_data(preset, group_by, date_from, date_to))
+    except Exception as error:
+        logger.exception("Analytics throughput-by-truck-type failed")
+        return _json_response(
+            {"success": False, "message": "เกิดข้อผิดพลาดในการดึงข้อมูลปริมาณรถแยกประเภท", "error": str(error)},
+            status=500,
+        )
+
+
+@extend_schema(
+    tags=["Analytics"],
+    summary="รถเข้า/ออก รายชั่วโมง แยกตามประเภทรถ",
+    description=(
+        "คืนค่าจำนวนรถเข้า/ออก รวมตามชั่วโมงของวัน (0–23) แยกตามประเภทรถ\n\n"
+        "- `in`  = นับจาก OperatorCarConfirm\n"
+        "- `out` = นับจาก PostingTime\n\n"
+        "หากเลือกช่วงหลายวัน จะรวมทุกวันเข้าด้วยกันตามชั่วโมง"
+    ),
+    parameters=[_PRESET_PARAM, _DATE_FROM_PARAM, _DATE_TO_PARAM],
+    responses={
+        200: OpenApiResponse(description="{preset, in:[{period, '4 ล้อ', ...}], out:[...]}"),
+        500: OpenApiResponse(description="เกิดข้อผิดพลาดในการดึงข้อมูล"),
+    },
+)
+@api_view(['GET'])
+def analytics_hourly_in_out(request):
+    preset    = request.GET.get("preset", "today")
+    date_from = request.GET.get("date_from")
+    date_to   = request.GET.get("date_to")
+    try:
+        return _json_response(get_hourly_breakdown_data(preset, date_from, date_to))
+    except Exception as error:
+        logger.exception("Analytics hourly in/out failed")
+        return _json_response(
+            {"success": False, "message": "เกิดข้อผิดพลาดในการดึงข้อมูลรถเข้า/ออกรายชั่วโมง", "error": str(error)},
+            status=500,
+        )
+
+
+@extend_schema(
+    tags=["Analytics"],
+    summary="การกระจายเวลารวมตามช่วงเวลา (box plot)",
+    description=(
+        "คืนค่าสถิติ 5 จุด (min/Q1/median/Q3/max) ของเวลารวม (PostingTime − OperatorCarConfirm) "
+        "ต่อรถ จัดกลุ่มตามวัน/ชั่วโมง — ไม่แยกตามประเภทรถ"
+    ),
+    parameters=[_PRESET_PARAM, _GROUP_BY_PARAM, _DATE_FROM_PARAM, _DATE_TO_PARAM],
+    responses={
+        200: OpenApiResponse(description="{preset, group_by, data:[{period, min, q1, median, q3, max, count}]}"),
+        500: OpenApiResponse(description="เกิดข้อผิดพลาดในการดึงข้อมูล"),
+    },
+)
+@api_view(['GET'])
+def analytics_time_distribution(request):
+    preset    = request.GET.get("preset", "today")
+    group_by  = request.GET.get("group_by", "day")
+    date_from = request.GET.get("date_from")
+    date_to   = request.GET.get("date_to")
+    try:
+        return _json_response(get_time_distribution_data(preset, group_by, date_from, date_to))
+    except Exception as error:
+        logger.exception("Analytics time-distribution failed")
+        return _json_response(
+            {"success": False, "message": "เกิดข้อผิดพลาดในการดึงข้อมูลการกระจายเวลา", "error": str(error)},
+            status=500,
+        )
+
+
+@extend_schema(
+    tags=["Analytics"],
+    summary="การกระจายเวลา 5 ช่วง แยกตามประเภทรถ (box plot)",
+    description=(
+        "คืนค่าสถิติ 5 จุด ของ 5 ช่วงเวลา (รอเรียก/รอโหลด/โหลด/รอปิดงาน/รอ post) "
+        "ต่อ (ช่วงเวลา × ประเภทรถ) จัดกลุ่มตามวัน/ชั่วโมง"
+    ),
+    parameters=[_PRESET_PARAM, _GROUP_BY_PARAM, _DATE_FROM_PARAM, _DATE_TO_PARAM],
+    responses={
+        200: OpenApiResponse(description="{preset, group_by, phases:{<phase>:{data:[{period, <truckType>:{min,q1,median,q3,max,count}}]}}}"),
+        500: OpenApiResponse(description="เกิดข้อผิดพลาดในการดึงข้อมูล"),
+    },
+)
+@api_view(['GET'])
+def analytics_phase_distribution(request):
+    preset    = request.GET.get("preset", "today")
+    group_by  = request.GET.get("group_by", "day")
+    date_from = request.GET.get("date_from")
+    date_to   = request.GET.get("date_to")
+    try:
+        return _json_response(get_phase_distribution_data(preset, group_by, date_from, date_to))
+    except Exception as error:
+        logger.exception("Analytics phase-distribution failed")
+        return _json_response(
+            {"success": False, "message": "เกิดข้อผิดพลาดในการดึงข้อมูลการกระจายเวลาแต่ละช่วง", "error": str(error)},
             status=500,
         )
 

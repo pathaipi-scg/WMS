@@ -4,11 +4,24 @@ import { DashboardLayout } from '../layouts/DashboardLayout';
 import { ConnectionStatusBanner } from '../shared/components/feedback/ConnectionStatusBanner';
 import {
   AnalyticsDateRangePicker, KpiCard,
-  ThroughputChart, QueueDistributionChart, ProductVolumeChart,
-  AvgTimeByQueueChart, NotificationSummaryChart,
-  useKpiData,
+  ThroughputChart, HourlyInOutChart, ProductVolumeChart,
+  TimeDistributionChart, PhaseBoxPlotPair,
+  // ปิดการแสดงผลชั่วคราว (คอมเมนต์ไว้ ไม่ลบ): AvgTimeByQueueChart
+  // AvgTimeByQueueChart,
+  // ปิดการแสดงผลชั่วคราว (คอมเมนต์ไว้ ไม่ลบ): QueueDistributionChart, NotificationSummaryChart
+  // QueueDistributionChart, NotificationSummaryChart,
+  useKpiData, usePhaseDistributionData,
   AnalyticsRealtimeProvider, useAnalyticsRealtimeContext,
 } from '../features/analytics';
+
+// 5 ช่วงเวลาในวงจรรถ (key ตรงกับ backend) + ชื่อแสดงผล
+const PHASE_ITEMS = [
+  { key: 'wait_call',  title: 'เวลารอเรียก' },
+  { key: 'wait_load',  title: 'เวลารอโหลด' },
+  { key: 'load',       title: 'เวลาโหลด' },
+  { key: 'wait_close', title: 'เวลารอปิดงาน' },
+  { key: 'wait_post',  title: 'เวลารอ post' },
+];
 
 export function AnalyticsPage() {
   const [preset, setPreset] = useState('today');
@@ -40,6 +53,12 @@ function AnalyticsPageContent({ preset, dateFrom, dateTo, onRangeChange }) {
 
   const { data, loading, error } = useKpiData(preset, dateFrom, dateTo);
   const kpi = data?.kpi ?? {};
+
+  // ดึงการกระจายเวลา 5 ช่วง (แยกชนิดรถ) ครั้งเดียวต่อ group_by แล้วแบ่งให้แต่ละคู่
+  const phaseDaily = usePhaseDistributionData(preset, 'day', dateFrom, dateTo);
+  const phaseHourly = usePhaseDistributionData(preset, 'hour', dateFrom, dateTo);
+  const phaseLoading = phaseDaily.loading || phaseHourly.loading;
+  const phaseError = phaseDaily.error || phaseHourly.error;
 
   const presetLabel = {
     today:  'เมื่อวาน',
@@ -130,16 +149,35 @@ function AnalyticsPageContent({ preset, dateFrom, dateTo, onRangeChange }) {
           />
         </div>
 
-        {/* Charts row 1 — throughput + queue distribution + notification KPI */}
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-4">
-          <div className="lg:col-span-2">
-            <ThroughputChart preset={preset} dateFrom={dateFrom} dateTo={dateTo} />
-          </div>
+        {/* Charts row 1 — ซ้าย: ปริมาณรถเข้า (แยกประเภทรถ) · ขวา: รถเข้า/ออก รายชั่วโมง วางคู่กัน */}
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+          <ThroughputChart preset={preset} dateFrom={dateFrom} dateTo={dateTo} />
+          <HourlyInOutChart preset={preset} dateFrom={dateFrom} dateTo={dateTo} />
+        </div>
+
+        {/* ปิดการแสดงผลชั่วคราว (คอมเมนต์ไว้ ไม่ลบ) — กราฟสัดส่วนประเภทคิว + จำนวนการแจ้งเตือน
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
           <QueueDistributionChart preset={preset} dateFrom={dateFrom} dateTo={dateTo} />
           <NotificationSummaryChart preset={preset} dateFrom={dateFrom} dateTo={dateTo} />
         </div>
+        */}
 
-        {/* Charts row 2 — avg time by truck type (pass kpi values as reference lines) */}
+        {/* Charts row 2 — การกระจายเวลารวม (box plot) วางคู่กัน: รายวัน | รายชั่วโมง */}
+        <TimeDistributionChart preset={preset} dateFrom={dateFrom} dateTo={dateTo} />
+
+        {/* Charts row 3–7 — box plot แยกชนิดรถ ของ 5 ช่วงเวลา (คู่ละ รายวัน | รายชั่วโมง) */}
+        {PHASE_ITEMS.map(({ key, title }) => (
+          <PhaseBoxPlotPair
+            key={key}
+            title={title}
+            dailyRows={phaseDaily.data?.phases?.[key]?.data ?? []}
+            hourlyRows={phaseHourly.data?.phases?.[key]?.data ?? []}
+            loading={phaseLoading}
+            error={phaseError}
+          />
+        ))}
+
+        {/* ปิดการแสดงผลชั่วคราว (คอมเมนต์ไว้ ไม่ลบ) — เวลาเฉลี่ยแยกตามประเภทรถ
         <AvgTimeByQueueChart
           preset={preset}
           dateFrom={dateFrom}
@@ -148,6 +186,7 @@ function AnalyticsPageContent({ preset, dateFrom, dateTo, onRangeChange }) {
           kpiAvgLoad={kpi.avg_load_min?.value ?? null}
           kpiAvgTotal={kpi.avg_total_min?.value ?? null}
         />
+        */}
 
         {/* Charts row 3 — product volume stacked bar */}
         <ProductVolumeChart preset={preset} dateFrom={dateFrom} dateTo={dateTo} />
