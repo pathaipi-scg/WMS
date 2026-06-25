@@ -30,6 +30,7 @@ export const KpiCard = memo(function KpiCard({
   changePct,
   icon: Icon,
   loading = false,
+  showChange = true,
 }) {
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
@@ -59,7 +60,7 @@ export const KpiCard = memo(function KpiCard({
         {subtitle && (
           <span className="text-xs text-gray-400">{subtitle}</span>
         )}
-        {!loading && <ChangeBadge changePct={changePct} />}
+        {!loading && showChange && <ChangeBadge changePct={changePct} />}
       </div>
     </div>
   );

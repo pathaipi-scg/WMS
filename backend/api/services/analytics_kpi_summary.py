@@ -78,6 +78,26 @@ def _kpi_data(start_dt, end_dt):
     # rate คิดจากรถที่เสร็จแล้ว (มี PostingTime) ไม่ใช่รถทั้งหมด
     overtime_rate = round(overtime_count / completed_trucks * 100, 1) if completed_trucks else 0.0
 
+    # เวลาคันแรกที่แตะบัตร (OperatorCarConfirm แรกสุด) — คืนเป็น HH:MM
+    first_picking = fetch_scalar("""
+        SELECT CONVERT(VARCHAR(5), MIN(CAST(OperatorCarConfirm AS DATETIME)), 108)
+        FROM [OBM_DWMS].[dbo].[vwTimeStampDashbaord]
+        WHERE PlantName = %s
+          AND OperatorCarConfirm >= %s
+          AND OperatorCarConfirm <= %s
+          AND OperatorCarConfirm IS NOT NULL
+    """, params, default=None)
+
+    # เวลาคันสุดท้ายที่ออกจากโรงงาน (PostingTime ล่าสุด) — คืนเป็น HH:MM
+    last_posting = fetch_scalar("""
+        SELECT CONVERT(VARCHAR(5), MAX(CAST(PostingTime AS DATETIME)), 108)
+        FROM [OBM_DWMS].[dbo].[vwTimeStampDashbaord]
+        WHERE PlantName = %s
+          AND OperatorCarConfirm >= %s
+          AND OperatorCarConfirm <= %s
+          AND PostingTime IS NOT NULL
+    """, params, default=None)
+
     return {
         "total_trucks": total_trucks,
         "avg_wait_min": round(avg_wait_min, 1) if avg_wait_min is not None else None,
@@ -85,6 +105,8 @@ def _kpi_data(start_dt, end_dt):
         "avg_total_min": round(avg_total_min, 1) if avg_total_min is not None else None,
         "overtime_count": overtime_count,
         "overtime_rate": overtime_rate,
+        "first_picking": first_picking,
+        "last_posting": last_posting,
     }
 
 
@@ -135,6 +157,16 @@ def get_kpi_summary_data(preset: str = 'today', date_from: str = None, date_to: 
                 "rate": current["overtime_rate"],
                 "prev": previous["overtime_count"],
                 "change_pct": _pct_change(current["overtime_count"], previous["overtime_count"]),
+            },
+            "first_picking": {
+                "value": current["first_picking"],
+                "prev": previous["first_picking"],
+                "change_pct": None,
+            },
+            "last_posting": {
+                "value": current["last_posting"],
+                "prev": previous["last_posting"],
+                "change_pct": None,
             },
         },
     }

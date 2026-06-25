@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { AlertCircle, Clock, Hourglass, Timer, TrendingUp, Truck } from 'lucide-react';
+import { AlertCircle, Clock, Hourglass, LogIn, LogOut, Timer, TrendingUp, Truck } from 'lucide-react';
 import { DashboardLayout } from '../layouts/DashboardLayout';
 import { ConnectionStatusBanner } from '../shared/components/feedback/ConnectionStatusBanner';
 import {
@@ -101,7 +101,7 @@ function AnalyticsPageContent({ preset, dateFrom, dateTo, onRangeChange }) {
         )}
 
         {/* KPI Cards */}
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-5">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
           <KpiCard
             label="รถทั้งหมด"
             value={kpi.total_trucks?.value ?? null}
@@ -146,6 +146,26 @@ function AnalyticsPageContent({ preset, dateFrom, dateTo, onRangeChange }) {
             changePct={kpi.overtime?.change_pct ?? null}
             icon={TrendingUp}
             loading={loading}
+          />
+          <KpiCard
+            label="เวลาคันแรกแตะบัตร"
+            value={kpi.first_picking?.value ?? null}
+            unit="น."
+            subtitle={`${presetShortLabel} ${kpi.first_picking?.prev ?? '—'} น.`}
+            changePct={kpi.first_picking?.change_pct ?? null}
+            icon={LogIn}
+            loading={loading}
+            showChange={false}
+          />
+          <KpiCard
+            label="เวลาคันสุดท้ายออก"
+            value={kpi.last_posting?.value ?? null}
+            unit="น."
+            subtitle={`${presetShortLabel} ${kpi.last_posting?.prev ?? '—'} น.`}
+            changePct={kpi.last_posting?.change_pct ?? null}
+            icon={LogOut}
+            loading={loading}
+            showChange={false}
           />
         </div>
 
