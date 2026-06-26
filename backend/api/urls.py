@@ -5,9 +5,12 @@ from .views import (
     auth_login, auth_me, auth_add_plant, auth_delete_plant,
     dashboard_snapshot, dashboard_summary, post_locations_api,
     prediction_report, prediction_log, prediction_metrics_timeseries, prediction_models, predictions_snapshot, truck_queues,
-    analytics_kpi_summary, analytics_throughput, analytics_queue_distribution,
+    analytics_kpi_summary, analytics_throughput, analytics_throughput_by_truck_type,
+    analytics_hourly_in_out, analytics_time_distribution, analytics_phase_distribution,
+    analytics_queue_distribution,
     analytics_product_volume, analytics_avg_time_by_truck_type, analytics_snapshot,
-    analytics_notification_summary,
+    analytics_notification_summary, analytics_lane_phase_breakdown,
+    analytics_truck_history,
 )
 
 urlpatterns = [
@@ -31,8 +34,14 @@ urlpatterns = [
     path("analytics/snapshot/", enforce_plant_access(analytics_snapshot), name="analytics_snapshot"),
     path("analytics/kpi-summary/", enforce_plant_access(analytics_kpi_summary), name="analytics_kpi_summary"),
     path("analytics/throughput/", enforce_plant_access(analytics_throughput), name="analytics_throughput"),
+    path("analytics/throughput-by-truck-type/", enforce_plant_access(analytics_throughput_by_truck_type), name="analytics_throughput_by_truck_type"),
+    path("analytics/hourly-in-out/", enforce_plant_access(analytics_hourly_in_out), name="analytics_hourly_in_out"),
+    path("analytics/time-distribution/", enforce_plant_access(analytics_time_distribution), name="analytics_time_distribution"),
+    path("analytics/phase-distribution/", enforce_plant_access(analytics_phase_distribution), name="analytics_phase_distribution"),
     path("analytics/queue-distribution/", enforce_plant_access(analytics_queue_distribution), name="analytics_queue_distribution"),
     path("analytics/product-volume/", enforce_plant_access(analytics_product_volume), name="analytics_product_volume"),
+    path("analytics/lane-phase-breakdown/", enforce_plant_access(analytics_lane_phase_breakdown), name="analytics_lane_phase_breakdown"),
+    path("analytics/truck-history/", enforce_plant_access(analytics_truck_history), name="analytics_truck_history"),
     path("analytics/avg-time-by-truck-type/", enforce_plant_access(analytics_avg_time_by_truck_type), name="analytics_avg_time_by_truck_type"),
     path("analytics/notification-summary/", enforce_plant_access(analytics_notification_summary), name="analytics_notification_summary"),
 ]

@@ -27,6 +27,54 @@ export async function getAnalyticsThroughput(preset = 'today', groupBy = 'day', 
   return response.data;
 }
 
+// ปริมาณรถเข้า แยกตามประเภทรถ (สำหรับกราฟเส้นหลายเส้น)
+export async function getAnalyticsThroughputByTruckType(preset = 'today', groupBy = 'day', dateFrom, dateTo) {
+  const response = await apiClient.get('/analytics/throughput-by-truck-type/', {
+    params: { ...buildDateRangeParams(preset, dateFrom, dateTo), group_by: groupBy },
+  });
+  return response.data;
+}
+
+// รถเข้า/ออก รายชั่วโมง แยกตามประเภทรถ ({ in: [...], out: [...] })
+export async function getAnalyticsHourlyInOut(preset = 'today', dateFrom, dateTo) {
+  const response = await apiClient.get('/analytics/hourly-in-out/', {
+    params: buildDateRangeParams(preset, dateFrom, dateTo),
+  });
+  return response.data;
+}
+
+// การกระจายเวลารวมตามช่วงเวลา (box plot: min/q1/median/q3/max ต่อ period)
+export async function getAnalyticsTimeDistribution(preset = 'today', groupBy = 'day', dateFrom, dateTo) {
+  const response = await apiClient.get('/analytics/time-distribution/', {
+    params: { ...buildDateRangeParams(preset, dateFrom, dateTo), group_by: groupBy },
+  });
+  return response.data;
+}
+
+// การกระจายเวลา 5 ช่วง แยกตามประเภทรถ (box plot) — { phases: { wait_call: {...}, ... } }
+export async function getAnalyticsPhaseDistribution(preset = 'today', groupBy = 'day', dateFrom, dateTo) {
+  const response = await apiClient.get('/analytics/phase-distribution/', {
+    params: { ...buildDateRangeParams(preset, dateFrom, dateTo), group_by: groupBy },
+  });
+  return response.data;
+}
+
+// ประวัติรถย้อนหลัง — N คันล่าสุดในช่วงที่เลือก (โครงสร้างแถวเหมือน /truck_queues/)
+export async function getAnalyticsTruckHistory(preset = 'today', dateFrom, dateTo, limit = 100) {
+  const response = await apiClient.get('/analytics/truck-history/', {
+    params: { ...buildDateRangeParams(preset, dateFrom, dateTo), limit },
+  });
+  return response.data;
+}
+
+// เวลาเฉลี่ย 5 ช่วง แยกตามลานจอด (stacked bar) — { lanes: [{ lane, wait_call, ... , total }] }
+export async function getAnalyticsLanePhaseBreakdown(preset = 'today', dateFrom, dateTo) {
+  const response = await apiClient.get('/analytics/lane-phase-breakdown/', {
+    params: buildDateRangeParams(preset, dateFrom, dateTo),
+  });
+  return response.data;
+}
+
 export async function getAnalyticsQueueDistribution(preset = 'today', dateFrom, dateTo) {
   const response = await apiClient.get('/analytics/queue-distribution/', {
     params: buildDateRangeParams(preset, dateFrom, dateTo),
