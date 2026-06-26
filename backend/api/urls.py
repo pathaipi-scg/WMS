@@ -9,7 +9,8 @@ from .views import (
     analytics_hourly_in_out, analytics_time_distribution, analytics_phase_distribution,
     analytics_queue_distribution,
     analytics_product_volume, analytics_avg_time_by_truck_type, analytics_snapshot,
-    analytics_notification_summary,
+    analytics_notification_summary, analytics_lane_phase_breakdown,
+    analytics_truck_history,
 )
 
 urlpatterns = [
@@ -39,6 +40,8 @@ urlpatterns = [
     path("analytics/phase-distribution/", enforce_plant_access(analytics_phase_distribution), name="analytics_phase_distribution"),
     path("analytics/queue-distribution/", enforce_plant_access(analytics_queue_distribution), name="analytics_queue_distribution"),
     path("analytics/product-volume/", enforce_plant_access(analytics_product_volume), name="analytics_product_volume"),
+    path("analytics/lane-phase-breakdown/", enforce_plant_access(analytics_lane_phase_breakdown), name="analytics_lane_phase_breakdown"),
+    path("analytics/truck-history/", enforce_plant_access(analytics_truck_history), name="analytics_truck_history"),
     path("analytics/avg-time-by-truck-type/", enforce_plant_access(analytics_avg_time_by_truck_type), name="analytics_avg_time_by_truck_type"),
     path("analytics/notification-summary/", enforce_plant_access(analytics_notification_summary), name="analytics_notification_summary"),
 ]

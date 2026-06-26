@@ -8,8 +8,7 @@ from ..utils.sql_fragments import (
     QUEUE_TYPE_CASE,
 )
 
-_TRUCK_QUEUES_SQL = f"""
-    SELECT
+TRUCK_QUEUE_COLUMNS = f"""
         TruckSeqNo AS sequence,
         TruckSeqNo AS truckSeqNo,
         CarNo AS licensePlate,
@@ -57,9 +56,13 @@ _TRUCK_QUEUES_SQL = f"""
         ) AS totalPalletCount,
         TruckStatus AS rawTruckStatus,
         CASE
-            WHEN TruckStatus = 'Loading' THEN N'กำลังโหลด'
-            WHEN TruckStatus = 'Waiting' THEN N'รอคิว'
-            ELSE TruckStatus
+            WHEN PostingTime IS NOT NULL THEN N'เสร็จสิ้น'
+            WHEN CheckerClose IS NOT NULL THEN N'รอ Posting'
+            WHEN LastPostPallet IS NOT NULL THEN N'รอปิดงาน'
+            WHEN FirstPostPallet IS NOT NULL THEN N'กำลังโหลด'
+            WHEN CarConfirm IS NOT NULL THEN N'รอโหลด'
+            WHEN OperatorCarConfirm IS NOT NULL THEN N'รอเรียก'
+            ELSE N'รอคิว'
         END AS status,
         OperatorCarConfirm AS arrivalDate,
         CarConfirm AS callDate,
@@ -144,7 +147,12 @@ _TRUCK_QUEUES_SQL = f"""
                 THEN N'เสร็จแล้ว'
             ELSE N'ไม่มีรับ'
         END AS accStatus
+"""
 
+
+_TRUCK_QUEUES_SQL = f"""
+    SELECT
+    {TRUCK_QUEUE_COLUMNS}
     FROM [OBM_DWMS].[dbo].[vwTimeStampDashbaord] vtd
     WHERE PlantName = %s
     AND PackListStatus IN (

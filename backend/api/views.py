@@ -24,6 +24,8 @@ from .services.analytics_time_distribution import get_time_distribution_data
 from .services.analytics_phase_distribution import get_phase_distribution_data
 from .services.analytics_queue_distribution import get_queue_distribution_data
 from .services.analytics_product_volume import get_product_volume_data
+from .services.analytics_lane_phase_breakdown import get_lane_phase_breakdown_data
+from .services.analytics_truck_history import get_truck_history_data
 from .services.analytics_avg_time_by_truck_type import get_avg_time_by_truck_type_data
 from .services.analytics_notification_summary import get_notification_summary_data
 
@@ -723,6 +725,57 @@ def analytics_product_volume(request):
         logger.exception("Analytics product volume failed")
         return _json_response(
             {"success": False, "message": "เกิดข้อผิดพลาดในการดึงข้อมูลปริมาณสินค้า", "error": str(error)},
+            status=500,
+        )
+
+
+@extend_schema(
+    tags=["Analytics"],
+    summary="เวลาเฉลี่ย 5 ช่วงแยกตามลานจอด",
+    description="คืนค่าเวลาเฉลี่ย (นาที) ของ 5 ช่วงในวงจรรถ (รอเรียก/รอโหลด/โหลด/รอปิดงาน/รอ post) แยกตามลานจอด สำหรับ stacked bar",
+    parameters=[_PRESET_PARAM, _DATE_FROM_PARAM, _DATE_TO_PARAM],
+    responses={
+        200: OpenApiResponse(description="{preset, lanes:[{lane, truck_count, wait_call, wait_load, load, wait_close, wait_post, total}]}"),
+        500: OpenApiResponse(description="เกิดข้อผิดพลาดในการดึงข้อมูล"),
+    },
+)
+@api_view(['GET'])
+def analytics_lane_phase_breakdown(request):
+    preset    = request.GET.get("preset", "today")
+    date_from = request.GET.get("date_from")
+    date_to   = request.GET.get("date_to")
+    try:
+        return _json_response(get_lane_phase_breakdown_data(preset, date_from, date_to))
+    except Exception as error:
+        logger.exception("Analytics lane phase breakdown failed")
+        return _json_response(
+            {"success": False, "message": "เกิดข้อผิดพลาดในการดึงข้อมูลเวลาเฉลี่ยแยกตามลานจอด", "error": str(error)},
+            status=500,
+        )
+
+
+@extend_schema(
+    tags=["Analytics"],
+    summary="ประวัติรถย้อนหลัง (N คันล่าสุด)",
+    description="คืนค่ารายการรถล่าสุดในช่วงเวลาที่เลือก (รวมทุกสถานะ) สำหรับตารางย้อนดูข้อมูล โครงสร้างเหมือน /truck_queues/",
+    parameters=[_PRESET_PARAM, _DATE_FROM_PARAM, _DATE_TO_PARAM],
+    responses={
+        200: OpenApiResponse(description="{preset, limit, count, trucks:[...]}"),
+        500: OpenApiResponse(description="เกิดข้อผิดพลาดในการดึงข้อมูล"),
+    },
+)
+@api_view(['GET'])
+def analytics_truck_history(request):
+    preset    = request.GET.get("preset", "today")
+    date_from = request.GET.get("date_from")
+    date_to   = request.GET.get("date_to")
+    limit     = request.GET.get("limit", 100)
+    try:
+        return _json_response(get_truck_history_data(preset, date_from, date_to, limit))
+    except Exception as error:
+        logger.exception("Analytics truck history failed")
+        return _json_response(
+            {"success": False, "message": "เกิดข้อผิดพลาดในการดึงข้อมูลประวัติรถ", "error": str(error)},
             status=500,
         )
 

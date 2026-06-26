@@ -5,7 +5,8 @@ import { ConnectionStatusBanner } from '../shared/components/feedback/Connection
 import {
   AnalyticsDateRangePicker, KpiCard,
   ThroughputChart, HourlyInOutChart, ProductVolumeChart,
-  TimeDistributionChart, PhaseBoxPlotPair,
+  TimeDistributionChart, PhaseBoxPlotPair, LanePhaseBreakdownChart,
+  AnalyticsHistoryTable,
   // ปิดการแสดงผลชั่วคราว (คอมเมนต์ไว้ ไม่ลบ): AvgTimeByQueueChart
   // AvgTimeByQueueChart,
   // ปิดการแสดงผลชั่วคราว (คอมเมนต์ไว้ ไม่ลบ): QueueDistributionChart, NotificationSummaryChart
@@ -208,8 +209,14 @@ function AnalyticsPageContent({ preset, dateFrom, dateTo, onRangeChange }) {
         />
         */}
 
+        {/* เวลาเฉลี่ย 5 ช่วง แยกตามลานจอด (stacked bar) */}
+        <LanePhaseBreakdownChart preset={preset} dateFrom={dateFrom} dateTo={dateTo} />
+
         {/* Charts row 3 — product volume stacked bar */}
         <ProductVolumeChart preset={preset} dateFrom={dateFrom} dateTo={dateTo} />
+
+        {/* ตารางประวัติรถย้อนหลัง (เหมือนหน้าแรก แต่เก็บทุกคัน) — ล่างสุด */}
+        <AnalyticsHistoryTable preset={preset} dateFrom={dateFrom} dateTo={dateTo} />
 
       </div>
     </DashboardLayout>

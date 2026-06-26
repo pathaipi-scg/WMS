@@ -59,6 +59,22 @@ export async function getAnalyticsPhaseDistribution(preset = 'today', groupBy = 
   return response.data;
 }
 
+// ประวัติรถย้อนหลัง — N คันล่าสุดในช่วงที่เลือก (โครงสร้างแถวเหมือน /truck_queues/)
+export async function getAnalyticsTruckHistory(preset = 'today', dateFrom, dateTo, limit = 100) {
+  const response = await apiClient.get('/analytics/truck-history/', {
+    params: { ...buildDateRangeParams(preset, dateFrom, dateTo), limit },
+  });
+  return response.data;
+}
+
+// เวลาเฉลี่ย 5 ช่วง แยกตามลานจอด (stacked bar) — { lanes: [{ lane, wait_call, ... , total }] }
+export async function getAnalyticsLanePhaseBreakdown(preset = 'today', dateFrom, dateTo) {
+  const response = await apiClient.get('/analytics/lane-phase-breakdown/', {
+    params: buildDateRangeParams(preset, dateFrom, dateTo),
+  });
+  return response.data;
+}
+
 export async function getAnalyticsQueueDistribution(preset = 'today', dateFrom, dateTo) {
   const response = await apiClient.get('/analytics/queue-distribution/', {
     params: buildDateRangeParams(preset, dateFrom, dateTo),

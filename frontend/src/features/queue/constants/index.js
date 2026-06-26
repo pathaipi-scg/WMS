@@ -8,8 +8,13 @@ export const QUEUE_TYPES = {
 };
 
 export const QUEUE_STATUSES = {
+  queued: 'รอคิว',
+  waitingCall: 'รอเรียก',
+  waitingLoad: 'รอโหลด',
   loading: 'กำลังโหลด',
-  waiting: 'รอคิว',
+  waitingClose: 'รอปิดงาน',
+  waitingPosting: 'รอ Posting',
+  done: 'เสร็จสิ้น',
 };
 
 export const QUEUE_TYPE_OPTIONS = [
@@ -21,8 +26,13 @@ export const QUEUE_TYPE_OPTIONS = [
 
 export const QUEUE_STATUS_OPTIONS = [
   { value: ALL_QUEUE_STATUSES, label: 'สถานะทั้งหมด' },
+  { value: QUEUE_STATUSES.queued, label: QUEUE_STATUSES.queued },
+  { value: QUEUE_STATUSES.waitingCall, label: QUEUE_STATUSES.waitingCall },
+  { value: QUEUE_STATUSES.waitingLoad, label: QUEUE_STATUSES.waitingLoad },
   { value: QUEUE_STATUSES.loading, label: QUEUE_STATUSES.loading },
-  { value: QUEUE_STATUSES.waiting, label: QUEUE_STATUSES.waiting },
+  { value: QUEUE_STATUSES.waitingClose, label: QUEUE_STATUSES.waitingClose },
+  { value: QUEUE_STATUSES.waitingPosting, label: QUEUE_STATUSES.waitingPosting },
+  { value: QUEUE_STATUSES.done, label: QUEUE_STATUSES.done },
 ];
 
 export const QUEUE_TYPE_ALIASES = {
@@ -35,8 +45,13 @@ export const QUEUE_TYPE_ALIASES = {
 export const QUEUE_STATUS_ALIASES = {
   loading: QUEUE_STATUSES.loading,
   กำลังโหลด: QUEUE_STATUSES.loading,
-  waiting: QUEUE_STATUSES.waiting,
-  รอคิว: QUEUE_STATUSES.waiting,
+  waiting: QUEUE_STATUSES.queued,
+  รอคิว: QUEUE_STATUSES.queued,
+  รอเรียก: QUEUE_STATUSES.waitingCall,
+  รอโหลด: QUEUE_STATUSES.waitingLoad,
+  รอปิดงาน: QUEUE_STATUSES.waitingClose,
+  'รอ posting': QUEUE_STATUSES.waitingPosting,
+  เสร็จสิ้น: QUEUE_STATUSES.done,
 };
 
 export const QUEUE_DETAILS_EMPTY_TIME = '-- : --';
