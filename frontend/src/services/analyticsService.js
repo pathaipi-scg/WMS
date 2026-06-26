@@ -59,6 +59,14 @@ export async function getAnalyticsPhaseDistribution(preset = 'today', groupBy = 
   return response.data;
 }
 
+// รถใช้เวลาเกินกำหนด (overtime > 120 นาที) — { summary, by_phase, by_truck_type, trucks }
+export async function getAnalyticsOvertime(preset = 'today', dateFrom, dateTo, limit = 200) {
+  const response = await apiClient.get('/analytics/overtime/', {
+    params: { ...buildDateRangeParams(preset, dateFrom, dateTo), limit },
+  });
+  return response.data;
+}
+
 // ประวัติรถย้อนหลัง — N คันล่าสุดในช่วงที่เลือก (โครงสร้างแถวเหมือน /truck_queues/)
 export async function getAnalyticsTruckHistory(preset = 'today', dateFrom, dateTo, limit = 100) {
   const response = await apiClient.get('/analytics/truck-history/', {
