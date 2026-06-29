@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { DashboardPage } from '../pages/DashboardPage';
 import { PredictionPage } from '../pages/PredictionPage';
 import { AnalyticsPage } from '../pages/AnalyticsPage';
+import { OvertimePage } from '../pages/OvertimePage';
 import { LoginPage, useAuth } from '../features/auth';
 import { PageLoadingState } from '../shared/components/feedback/PageLoadingState';
 
@@ -24,6 +25,7 @@ export function AppRouter() {
       <Route path="/" element={<DashboardPage key={plantKey} />} />
       <Route path="/predictions" element={<PredictionPage key={plantKey} />} />
       <Route path="/analytics" element={<AnalyticsPage key={plantKey} />} />
+      <Route path="/overtime" element={<OvertimePage key={plantKey} />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

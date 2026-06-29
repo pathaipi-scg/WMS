@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { NavLink } from 'react-router-dom';
-import { BarChart2, ChartBar, LayoutDashboard } from 'lucide-react';
+import { AlertTriangle, BarChart2, ChartBar, LayoutDashboard } from 'lucide-react';
 import { DEFAULT_PLANT_NAME } from '../shared/constants/app';
 import { NotificationMenu } from '../features/notifications';
 import { PlantSelector, AddPlantButton, UserMenu } from '../features/auth';
@@ -11,6 +11,7 @@ const NAV_TABS = [
   { to: '/',            label: 'ภาพรวม',         Icon: LayoutDashboard },
   { to: '/predictions', label: 'รายงานผลโมเดล',  Icon: ChartBar },
   { to: '/analytics',   label: 'วิเคราะห์ข้อมูล', Icon: BarChart2 },
+  { to: '/overtime',    label: 'รถใช้เวลาเกิน',  Icon: AlertTriangle },
 ];
 
 export const Header = memo(function Header({

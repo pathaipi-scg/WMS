@@ -22,5 +22,6 @@ export { useNotificationSummaryData } from './hooks/useNotificationSummaryData';
 export { usePhaseDistributionData } from './hooks/usePhaseDistributionData';
 export { useLanePhaseBreakdownData } from './hooks/useLanePhaseBreakdownData';
 export { useTruckHistoryData } from './hooks/useTruckHistoryData';
+export { useOvertimeData } from './hooks/useOvertimeData';
 export { PRESET_OPTIONS } from './constants';
 export { GROUP_OPTIONS, canUseHour, CHART_MARGIN, MAX_DOTS_THRESHOLD } from './constants/charts';

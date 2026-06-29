@@ -26,6 +26,7 @@ from .services.analytics_queue_distribution import get_queue_distribution_data
 from .services.analytics_product_volume import get_product_volume_data
 from .services.analytics_lane_phase_breakdown import get_lane_phase_breakdown_data
 from .services.analytics_truck_history import get_truck_history_data
+from .services.analytics_overtime import get_overtime_data
 from .services.analytics_avg_time_by_truck_type import get_avg_time_by_truck_type_data
 from .services.analytics_notification_summary import get_notification_summary_data
 
@@ -776,6 +777,32 @@ def analytics_truck_history(request):
         logger.exception("Analytics truck history failed")
         return _json_response(
             {"success": False, "message": "เกิดข้อผิดพลาดในการดึงข้อมูลประวัติรถ", "error": str(error)},
+            status=500,
+        )
+
+
+@extend_schema(
+    tags=["Analytics"],
+    summary="รถใช้เวลาเกินกำหนด (overtime)",
+    description="คืนค่าข้อมูลรถที่ใช้เวลาเกิน 120 นาที: summary, เวลาเฉลี่ยแต่ละช่วง (overtime vs ปกติ), จำนวนแยกประเภทรถ, และรายการรถ",
+    parameters=[_PRESET_PARAM, _DATE_FROM_PARAM, _DATE_TO_PARAM],
+    responses={
+        200: OpenApiResponse(description="{preset, threshold, summary, by_phase, by_truck_type, trucks:[...]}"),
+        500: OpenApiResponse(description="เกิดข้อผิดพลาดในการดึงข้อมูล"),
+    },
+)
+@api_view(['GET'])
+def analytics_overtime(request):
+    preset    = request.GET.get("preset", "today")
+    date_from = request.GET.get("date_from")
+    date_to   = request.GET.get("date_to")
+    limit     = request.GET.get("limit", 200)
+    try:
+        return _json_response(get_overtime_data(preset, date_from, date_to, limit))
+    except Exception as error:
+        logger.exception("Analytics overtime failed")
+        return _json_response(
+            {"success": False, "message": "เกิดข้อผิดพลาดในการดึงข้อมูลรถใช้เวลาเกิน", "error": str(error)},
             status=500,
         )
 
